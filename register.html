@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover">
+<title>إنشاء حساب — منصة أواب الإلكترونية</title>
+<link rel="icon" href="logo.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="auth-screen">
+
+  <aside class="identity-panel">
+    <svg class="lattice" viewBox="0 0 600 900" preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <pattern id="star8" width="120" height="120" patternUnits="userSpaceOnUse">
+          <g fill="none" stroke="#c8a24a" stroke-width="1">
+            <path d="M60 6 L78 42 L114 24 L96 60 L114 96 L78 78 L60 114 L42 78 L6 96 L24 60 L6 24 L42 42 Z"/>
+            <circle cx="60" cy="60" r="3" fill="#c8a24a" stroke="none"/>
+          </g>
+        </pattern>
+      </defs>
+      <rect width="600" height="900" fill="url(#star8)"/>
+    </svg>
+
+    <div class="identity-top">
+      <img src="logo.png" alt="شعار منصة أواب" onerror="this.style.display='none'">
+      <div class="identity-brandname">
+        منصة أواب الإلكترونية
+        <span>مسابقات وكورسات دينية</span>
+      </div>
+    </div>
+
+    <div class="identity-mid">
+      <h1>ابدأ رحلتك، <em>وانضم</em><br>إلى المتسابقين</h1>
+      <p>أنشئ حسابك للاشتراك في الكورسات الدينية والمشاركة في المسابقات، ومتابعة نقاطك ومستواك أولاً بأول.</p>
+    </div>
+
+    <div class="identity-bottom">
+      <div class="identity-stat"><b>+120</b><span>كورساً دينياً</span></div>
+      <div class="identity-stat"><b>+300</b><span>مسابقة منعقدة</span></div>
+      <div class="identity-stat"><b>+40 ألف</b><span>مشارك ومتعلم</span></div>
+    </div>
+  </aside>
+
+  <div class="auth-shell">
+    <div class="auth-panel">
+      <div class="auth-brand">
+        <h1>إنشاء حساب جديد</h1>
+        <p>انضم إلى منصة أواب الإلكترونية</p>
+      </div>
+
+      <p class="basmala">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
+
+      <!-- مؤشر الخطوات -->
+      <div class="reg-steps" id="regSteps">
+        <div class="reg-step-dot active" data-step-dot="1"><span class="dot-num">١</span><label>البيانات</label></div>
+        <div class="reg-step-line"></div>
+        <div class="reg-step-dot" data-step-dot="2"><span class="dot-num">٢</span><label>الهاتف</label></div>
+        <div class="reg-step-line"></div>
+        <div class="reg-step-dot" data-step-dot="3"><span class="dot-num">٣</span><label>التأكيد</label></div>
+        <div class="reg-step-line"></div>
+        <div class="reg-step-dot" data-step-dot="4"><span class="dot-num">٤</span><label>كلمة المرور</label></div>
+      </div>
+
+      <div class="form-msg" id="formMsg"></div>
+
+      <form id="registerForm" novalidate>
+
+        <!-- ===== الخطوة 1: الاسم والبريد الإلكتروني ===== -->
+        <div class="reg-step-panel active" data-step="1">
+          <div class="field" id="nameField">
+            <label for="fullName">الاسم رباعي (باللغة العربية)</label>
+            <input type="text" id="fullName" placeholder="الاسم الأول والثاني والثالث والرابع بالعربي" dir="rtl" required>
+            <div class="field-hint">أدخل الاسم كاملًا من أربع كلمات على الأقل، باللغة العربية فقط</div>
+          </div>
+
+          <div class="field" id="emailField">
+            <label for="email">البريد الإلكتروني</label>
+            <input type="email" id="email" autocomplete="username" placeholder="example@email.com" required>
+          </div>
+
+          <div class="step-nav">
+            <button type="button" class="btn btn-primary" id="step1NextBtn"><span>التالي</span></button>
+          </div>
+        </div>
+
+        <!-- ===== الخطوة 2: رقم الهاتف ===== -->
+        <div class="reg-step-panel" data-step="2">
+          <div class="field" id="phoneField">
+            <label for="phone">رقم الهاتف المحمول</label>
+            <div class="phone-input-wrap">
+              <span class="phone-prefix">+20</span>
+              <input type="tel" id="phone" inputmode="numeric" placeholder="01xxxxxxxxx" dir="ltr" maxlength="11" required>
+            </div>
+            <div class="field-hint">سيصلك كود تحقق مكوّن من 6 أرقام برسالة نصية على هذا الرقم</div>
+          </div>
+
+          <div id="recaptcha-container"></div>
+
+          <div class="step-nav">
+            <button type="button" class="btn btn-outline" data-back>رجوع</button>
+            <button type="button" class="btn btn-primary" id="sendCodeBtn"><span>إرسال كود التحقق</span></button>
+          </div>
+        </div>
+
+        <!-- ===== الخطوة 3: كود التحقق ===== -->
+        <div class="reg-step-panel" data-step="3">
+          <div class="field" id="otpField">
+            <label for="otpCode">كود التحقق</label>
+            <input type="tel" id="otpCode" inputmode="numeric" maxlength="6" placeholder="——————" class="otp-input" dir="ltr" required>
+            <div class="field-hint">تم إرسال كود مكوّن من 6 أرقام إلى <b id="otpPhoneDisplay" dir="ltr"></b></div>
+          </div>
+
+          <div class="otp-resend-row">
+            <button type="button" class="btn-link" id="resendBtn" disabled>إعادة إرسال الكود (<span id="resendCountdown">60</span>)</button>
+            <button type="button" class="btn-link" id="editPhoneBtn">تعديل رقم الهاتف</button>
+          </div>
+
+          <div class="step-nav">
+            <button type="button" class="btn btn-outline" data-back>رجوع</button>
+            <button type="button" class="btn btn-primary" id="verifyCodeBtn"><span>تأكيد الكود</span></button>
+          </div>
+        </div>
+
+        <!-- ===== الخطوة 4: كلمة المرور ===== -->
+        <div class="reg-step-panel" data-step="4">
+          <div class="field">
+            <label for="password">كلمة المرور</label>
+            <div class="password-toggle-wrap">
+              <input type="password" id="password" autocomplete="new-password" placeholder="••••••••" required>
+              <button type="button" class="password-toggle" data-target="password" aria-label="إظهار كلمة المرور"></button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="confirmPassword">تأكيد كلمة المرور</label>
+            <div class="password-toggle-wrap">
+              <input type="password" id="confirmPassword" autocomplete="new-password" placeholder="••••••••" required>
+              <button type="button" class="password-toggle" data-target="confirmPassword" aria-label="إظهار كلمة المرور"></button>
+            </div>
+          </div>
+
+          <ul class="rules-list" id="rulesList">
+            <li data-rule="length"><span class="tick"></span> 8 أحرف على الأقل</li>
+            <li data-rule="upper"><span class="tick"></span> حرف كبير (A-Z)</li>
+            <li data-rule="lower"><span class="tick"></span> حرف صغير (a-z)</li>
+            <li data-rule="number"><span class="tick"></span> رقم واحد على الأقل</li>
+            <li data-rule="symbol"><span class="tick"></span> رمز واحد على الأقل (!@#$...)</li>
+            <li data-rule="match"><span class="tick"></span> تطابق كلمتَي المرور</li>
+          </ul>
+
+          <div class="step-nav">
+            <button type="button" class="btn btn-outline" data-back>رجوع</button>
+            <button type="submit" class="btn btn-primary" id="registerBtn"><span>إنشاء الحساب</span></button>
+          </div>
+        </div>
+
+      </form>
+
+      <div class="auth-switch">
+        لديك حساب بالفعل؟ <a href="index.html">تسجيل الدخول</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="icons.js"></script>
+<script src="password-rules.js"></script>
+<script>
+  document.querySelectorAll('.password-toggle').forEach(function (btn) { btn.innerHTML = icon('eye'); });
+
+  const form = document.getElementById('registerForm');
+  const formMsg = document.getElementById('formMsg');
+  const registerBtn = document.getElementById('registerBtn');
+  const rulesList = document.getElementById('rulesList');
+  const passwordInput = document.getElementById('password');
+  const confirmInput = document.getElementById('confirmPassword');
+  const nameField = document.getElementById('nameField');
+  const fullNameInput = document.getElementById('fullName');
+  const emailField = document.getElementById('emailField');
+  const emailInput = document.getElementById('email');
+  const phoneField = document.getElementById('phoneField');
+  const phoneInput = document.getElementById('phone');
+  const otpField = document.getElementById('otpField');
+  const otpInput = document.getElementById('otpCode');
+  const otpPhoneDisplay = document.getElementById('otpPhoneDisplay');
+  const sendCodeBtn = document.getElementById('sendCodeBtn');
+  const verifyCodeBtn = document.getElementById('verifyCodeBtn');
+  const resendBtn = document.getElementById('resendBtn');
+  const resendCountdown = document.getElementById('resendCountdown');
+  const editPhoneBtn = document.getElementById('editPhoneBtn');
+  const step1NextBtn = document.getElementById('step1NextBtn');
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const egyptPhoneRegex = /^01[0125][0-9]{8}$/;
+
+  /* ================= حالة المعالج (Wizard state) ================= */
+  let currentStep = 1;
+  let recaptchaVerifier = null;
+  let confirmationResult = null;
+  let e164Phone = '';
+  let resendTimer = null;
+  let codeVerified = false;
+
+  /* ================= أدوات مساعدة ================= */
+
+  // يحوّل الأرقام العربية/الفارسية إلى أرقام إنجليزية أثناء الكتابة
+  const digitsMap = { '٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9',
+                       '۰':'0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9' };
+  function toEnglishDigits(value) {
+    return value.replace(/[٠-٩۰-۹]/g, function (d) { return digitsMap[d] || d; });
+  }
+
+  function showMsg(text, type) {
+    formMsg.textContent = text;
+    formMsg.className = 'form-msg show ' + type;
+  }
+
+  function clearMsg() {
+    formMsg.classList.remove('show');
+  }
+
+  // ✅ حالة تحميل احترافية للزر: تعطيل + Spinner + نص متغيّر
+  function setBtnLoading(btn, loading, loadingText, idleText) {
+    btn.disabled = loading;
+    btn.innerHTML = loading
+      ? '<span class="btn-spinner"></span><span>' + loadingText + '</span>'
+      : '<span>' + idleText + '</span>';
+  }
+
+  function goToStep(n) {
+    currentStep = n;
+    document.querySelectorAll('.reg-step-panel').forEach(function (panel) {
+      panel.classList.toggle('active', Number(panel.dataset.step) === n);
+    });
+    document.querySelectorAll('.reg-step-dot').forEach(function (dot) {
+      const s = Number(dot.dataset.stepDot);
+      dot.classList.toggle('active', s === n);
+      dot.classList.toggle('done', s < n);
+    });
+    clearMsg();
+  }
+
+  // منع زر Enter من إرسال النموذج قبل آخر خطوة
+  form.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter') return;
+    if (currentStep === 4) return; // اسمح بالإرسال الطبيعي في آخر خطوة
+    e.preventDefault();
+    if (currentStep === 1) step1Next();
+    else if (currentStep === 2) sendVerificationCode();
+    else if (currentStep === 3) verifyCode();
+  });
+
+  document.querySelectorAll('[data-back]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      if (currentStep === 4) goToStep(3);
+      else if (currentStep === 3) goToStep(2);
+      else if (currentStep === 2) goToStep(1);
+    });
+  });
+
+  /* ================= الخطوة 1: الاسم والبريد ================= */
+
+  fullNameInput.addEventListener('input', function () {
+    nameField.classList.remove('has-error');
+    const cleaned = stripNonArabicChars(fullNameInput.value);
+    if (cleaned !== fullNameInput.value) {
+      const caret = fullNameInput.selectionStart - (fullNameInput.value.length - cleaned.length);
+      fullNameInput.value = cleaned;
+      fullNameInput.setSelectionRange(caret, caret);
+    }
+  });
+
+  emailInput.addEventListener('input', function () { emailField.classList.remove('has-error'); });
+
+  function step1Next() {
+    clearMsg();
+    const fullName = fullNameInput.value.trim();
+    const email = emailInput.value.trim();
+
+    if (!isArabicName(fullName)) {
+      nameField.classList.add('has-error');
+      showMsg('الاسم يجب أن يكتب باللغة العربية فقط (بدون حروف إنجليزية)', 'error');
+      fullNameInput.focus();
+      return;
+    }
+    if (!isQuadName(fullName)) {
+      nameField.classList.add('has-error');
+      showMsg('الاسم يجب أن يكون رباعيًا (أربع كلمات على الأقل، كل كلمة حرفان فأكثر)', 'error');
+      fullNameInput.focus();
+      return;
+    }
+    nameField.classList.remove('has-error');
+
+    if (!email) {
+      emailField.classList.add('has-error');
+      showMsg('من فضلك أدخل بريدك الإلكتروني', 'error');
+      emailInput.focus();
+      return;
+    }
+    if (!emailRegex.test(email)) {
+      emailField.classList.add('has-error');
+      showMsg('صيغة البريد الإلكتروني غير صحيحة', 'error');
+      emailInput.focus();
+      return;
+    }
+    emailField.classList.remove('has-error');
+
+    goToStep(2);
+    phoneInput.focus();
+  }
+  step1NextBtn.addEventListener('click', step1Next);
+
+  /* ================= الخطوة 2: رقم الهاتف + إرسال الكود ================= */
+
+  phoneInput.addEventListener('input', function () {
+    phoneField.classList.remove('has-error');
+    let v = toEnglishDigits(phoneInput.value).replace(/[^0-9]/g, '');
+    phoneInput.value = v;
+  });
+
+  function mapError(code) {
+    const map = {
+      'auth/email-already-in-use': 'هذا البريد الإلكتروني مسجل من قبل',
+      'auth/invalid-email': 'صيغة البريد الإلكتروني غير صحيحة',
+      'auth/weak-password': 'كلمة المرور ضعيفة، راجع الشروط أعلاه',
+      'auth/network-request-failed': 'تعذر الاتصال بالشبكة، تحقق من الإنترنت',
+      'auth/operation-not-allowed': 'تسجيل الدخول بالبريد وكلمة المرور غير مفعّل في Firebase بعد',
+      'auth/unauthorized-domain': 'هذا النطاق غير مصرّح له من إعدادات Firebase',
+      'auth/invalid-phone-number': 'رقم الهاتف غير صحيح',
+      'auth/missing-phone-number': 'من فضلك أدخل رقم الهاتف',
+      'auth/too-many-requests': 'محاولات كثيرة جدًا من هذا الرقم، حاول لاحقًا',
+      'auth/quota-exceeded': 'تم تجاوز الحد المسموح لإرسال الرسائل حاليًا، حاول لاحقًا',
+      'auth/captcha-check-failed': 'فشل التحقق الأمني، من فضلك حاول مرة أخرى',
+      'auth/code-expired': 'انتهت صلاحية كود التحقق، اطلب كودًا جديدًا',
+      'auth/invalid-verification-code': 'كود التحقق غير صحيح',
+      'auth/missing-verification-code': 'من فضلك أدخل كود التحقق'
+    };
+    return map[code] || ('حدث خطأ (' + (code || 'غير معروف') + ')، حاول مرة أخرى');
+  }
+
+  function initRecaptcha() {
+    if (recaptchaVerifier) {
+      try { recaptchaVerifier.clear(); } catch (e) {}
+      recaptchaVerifier = null;
+    }
+    document.getElementById('recaptcha-container').innerHTML = '';
+    recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size: 'invisible' }, auth);
+  }
+
+  function sendVerificationCode() {
+    clearMsg();
+    const local = phoneInput.value.trim();
+
+    if (!local) {
+      phoneField.classList.add('has-error');
+      showMsg('من فضلك أدخل رقم الهاتف', 'error');
+      phoneInput.focus();
+      return;
+    }
+    if (!egyptPhoneRegex.test(local)) {
+      phoneField.classList.add('has-error');
+      showMsg('رقم الهاتف غير صحيح، أدخل رقم مصري صحيح (مثال: 01xxxxxxxxx)', 'error');
+      phoneInput.focus();
+      return;
+    }
+    phoneField.classList.remove('has-error');
+
+    e164Phone = '+2' + local; // 01xxxxxxxxx → +201xxxxxxxxx
+
+    setBtnLoading(sendCodeBtn, true, 'جارٍ إرسال الكود...', 'إرسال كود التحقق');
+
+    try { initRecaptcha(); } catch (e) {}
+
+    auth.signInWithPhoneNumber(e164Phone, recaptchaVerifier)
+      .then(function (result) {
+        confirmationResult = result;
+        otpPhoneDisplay.textContent = e164Phone;
+        otpInput.value = '';
+        codeVerified = false;
+        setBtnLoading(sendCodeBtn, false, '', 'إرسال كود التحقق');
+        showMsg('تم إرسال كود التحقق إلى هاتفك بنجاح', 'success');
+        goToStep(3);
+        otpInput.focus();
+        startResendCooldown(60);
+      })
+      .catch(function (err) {
+        showMsg(mapError(err.code), 'error');
+        phoneField.classList.add('has-error');
+        setBtnLoading(sendCodeBtn, false, '', 'إرسال كود التحقق');
+        try {
+          if (recaptchaVerifier) {
+            recaptchaVerifier.render().then(function (widgetId) {
+              if (window.grecaptcha) window.grecaptcha.reset(widgetId);
+            });
+          }
+        } catch (e) {}
+      });
+  }
+  sendCodeBtn.addEventListener('click', sendVerificationCode);
+
+  /* ================= الخطوة 3: تأكيد الكود ================= */
+
+  otpInput.addEventListener('input', function () {
+    otpField.classList.remove('has-error');
+    otpInput.value = toEnglishDigits(otpInput.value).replace(/[^0-9]/g, '');
+  });
+
+  function verifyCode() {
+    clearMsg();
+    const code = otpInput.value.trim();
+
+    if (!confirmationResult) {
+      showMsg('من فضلك اطلب كود التحقق أولًا', 'error');
+      goToStep(2);
+      return;
+    }
+    if (!code || code.length < 6) {
+      otpField.classList.add('has-error');
+      showMsg('من فضلك أدخل كود التحقق المكوّن من 6 أرقام', 'error');
+      otpInput.focus();
+      return;
+    }
+    otpField.classList.remove('has-error');
+
+    setBtnLoading(verifyCodeBtn, true, 'جارٍ التحقق...', 'تأكيد الكود');
+
+    confirmationResult.confirm(code)
+      .then(function (cred) {
+        // الهدف من هذه الخطوة فقط التأكد من ملكية الرقم، فنحذف حساب التحقق المؤقت
+        // ثم ننشئ الحساب الحقيقي بالبريد وكلمة المرور في الخطوة الأخيرة
+        codeVerified = true;
+        const tempUser = cred.user;
+        return tempUser.delete().catch(function () {
+          // لو تعذّر الحذف (مثلاً الرقم مستخدم من قبل) سجّل خروج فقط
+          return auth.signOut();
+        });
+      })
+      .then(function () {
+        setBtnLoading(verifyCodeBtn, false, '', 'تأكيد الكود');
+        showMsg('تم تأكيد رقم الهاتف بنجاح', 'success');
+        clearInterval(resendTimer);
+        goToStep(4);
+        passwordInput.focus();
+      })
+      .catch(function (err) {
+        codeVerified = false;
+        otpField.classList.add('has-error');
+        showMsg(mapError(err.code) || 'كود التحقق غير صحيح', 'error');
+        setBtnLoading(verifyCodeBtn, false, '', 'تأكيد الكود');
+      });
+  }
+  verifyCodeBtn.addEventListener('click', verifyCode);
+
+  function startResendCooldown(seconds) {
+    resendBtn.disabled = true;
+    let remaining = seconds;
+    resendCountdown.textContent = remaining;
+    resendBtn.innerHTML = 'إعادة إرسال الكود (<span id="resendCountdown">' + remaining + '</span>)';
+    clearInterval(resendTimer);
+    resendTimer = setInterval(function () {
+      remaining--;
+      const span = document.getElementById('resendCountdown');
+      if (span) span.textContent = remaining;
+      if (remaining <= 0) {
+        clearInterval(resendTimer);
+        resendBtn.disabled = false;
+        resendBtn.textContent = 'إعادة إرسال الكود';
+      }
+    }, 1000);
+  }
+
+  resendBtn.addEventListener('click', function () {
+    if (resendBtn.disabled) return;
+    sendVerificationCode();
+  });
+
+  editPhoneBtn.addEventListener('click', function () {
+    clearInterval(resendTimer);
+    confirmationResult = null;
+    goToStep(2);
+    phoneInput.focus();
+  });
+
+  /* ================= الخطوة 4: كلمة المرور وإنشاء الحساب ================= */
+
+  document.querySelectorAll('.password-toggle').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      const input = document.getElementById(btn.dataset.target);
+      const isPass = input.type === 'password';
+      input.type = isPass ? 'text' : 'password';
+      btn.innerHTML = icon(isPass ? 'eyeSlash' : 'eye');
+      btn.setAttribute('aria-label', isPass ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور');
+    });
+  });
+
+  function updateRules() {
+    const rules = checkPasswordRules(passwordInput.value, confirmInput.value);
+    renderPasswordRules(rulesList, rules);
+    return rules;
+  }
+  passwordInput.addEventListener('input', updateRules);
+  confirmInput.addEventListener('input', updateRules);
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (currentStep !== 4) return;
+    clearMsg();
+
+    const fullName = fullNameInput.value.trim();
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+    const rules = updateRules();
+
+    if (!codeVerified || !e164Phone) {
+      showMsg('من فضلك أكمل خطوة تأكيد رقم الهاتف أولًا', 'error');
+      goToStep(2);
+      return;
+    }
+
+    if (!allRulesPass(rules)) { showMsg('من فضلك استوفِ جميع شروط كلمة المرور الموضحة أعلاه', 'error'); return; }
+
+    setBtnLoading(registerBtn, true, 'جارٍ إنشاء الحساب...', 'إنشاء الحساب');
+
+    auth.createUserWithEmailAndPassword(email, password)
+      .then(function (cred) {
+        return cred.user.updateProfile({ displayName: fullName })
+          .then(function () {
+            return db.ref('users/' + cred.user.uid).set({
+              name: fullName,
+              email: email,
+              phone: e164Phone,
+              points: 0,
+              isAdmin: false,
+              blocked: false,
+              createdAt: firebase.database.ServerValue.TIMESTAMP
+            });
+          });
+      })
+      .then(function () {
+        showMsg('تم إنشاء الحساب بنجاح! جارٍ تحويلك لصفحة تسجيل الدخول...', 'success');
+        return auth.signOut();
+      })
+      .then(function () {
+        setTimeout(function () { window.location.href = 'index.html'; }, 1200);
+      })
+      .catch(function (err) {
+        showMsg(mapError(err.code), 'error');
+        if (err.code === 'auth/email-already-in-use' || err.code === 'auth/invalid-email') {
+          emailField.classList.add('has-error');
+          goToStep(1);
+        }
+        setBtnLoading(registerBtn, false, '', 'إنشاء الحساب');
+      });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>تفاصيل المحتوى — منصة أواب الإلكترونية</title>
+<link rel="icon" href="logo.png">
+<link rel="stylesheet" href="style.css">
+<!-- Font Awesome للأيقونات -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+  /* إضافة دعم للأسطر الجديدة في النصوص */
+  .preserve-linebreaks {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  .course-hero .hero-body p {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  .accordion-body .content-item .ci-left {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  .enroll-lock-card p {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+</style>
+</head>
+<body>
+
+<header class="app-header" id="appHeader"></header>
+
+<main class="page">
+  <a class="back-link" href="home.html">
+    <i class="fas fa-arrow-right"></i> كل المحتوى
+  </a>
+
+  <div id="courseHero"></div>
+
+  <h2 style="font-family:'Amiri',serif; color:var(--primary-dark); font-size:19px; margin:0 0 14px;">
+    <i class="fas fa-book-open" style="color:var(--gold);"></i> المحاضرات
+  </h2>
+
+  <div id="lessonsWrap">
+    <div class="center-loading"><div class="loader"></div></div>
+  </div>
+</main>
+
+<!-- نافذة الوصف الكامل -->
+<div class="modal-overlay" id="descModal">
+  <div class="modal">
+    <button class="modal-close" id="closeDescModal">
+      <i class="fas fa-times"></i>
+    </button>
+    <h3 id="descModalTitle" style="font-family:'Amiri',serif; color:var(--primary-dark);"></h3>
+    <p id="descModalBody" style="font-size:14px; line-height:1.8; color:var(--text); white-space:pre-wrap; word-wrap:break-word;"></p>
+  </div>
+</div>
+
+<!-- نافذة تأكيد الاشتراك -->
+<div class="modal-overlay" id="subscribeModal">
+  <div class="modal" style="max-width:400px; text-align:center;">
+    <h3 id="subscribeModalTitle" style="font-family:'Amiri',serif; color:var(--primary-dark);">تأكيد الاشتراك</h3>
+    <p id="subscribeModalBody" style="font-size:14px; line-height:1.8; color:var(--text); margin:0 0 22px; white-space:pre-wrap; word-wrap:break-word;">هل تريد تأكيد الاشتراك؟</p>
+    <div style="display:flex; gap:10px;">
+      <button type="button" class="btn btn-primary" id="confirmSubscribeBtn" style="flex:1;">نعم</button>
+      <button type="button" class="btn btn-outline" id="cancelSubscribeBtn" style="flex:1;">لا</button>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer" id="siteFooter"></footer>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="icons.js"></script>
+<script src="app-shell.js"></script>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const compId = params.get('id');
+  if (!compId) window.location.href = 'home.html';
+
+  let compData = null;
+  let progressData = {};
+  let isEnrolled = false;
+  let currentUser = null;
+
+  requireAuth(function (user, userData) {
+    currentUser = user;
+    renderAppHeader(user, userData, { showPoints: true });
+    renderFooter();
+
+    db.ref('userProgress/' + user.uid + '/' + compId).on('value', function (snap) {
+      progressData = snap.val() || {};
+      if (compData) render();
+    });
+
+    db.ref('userEnrollments/' + user.uid + '/' + compId).on('value', function (snap) {
+      isEnrolled = snap.exists();
+      if (compData) render();
+    });
+
+    db.ref('competitions/' + compId).on('value', function (snap) {
+      if (!snap.exists()) { window.location.href = 'home.html'; return; }
+      compData = snap.val();
+      render();
+    });
+  });
+
+  function render() {
+    renderHero();
+    renderLessons();
+  }
+
+  /* ===== الاشتراك ===== */
+  function subscribe() {
+    const now = firebase.database.ServerValue.TIMESTAMP;
+    const updates = {};
+    updates['enrollments/' + compId + '/' + currentUser.uid] = now;
+    updates['userEnrollments/' + currentUser.uid + '/' + compId] = now;
+    return db.ref().update(updates);
+  }
+
+  document.getElementById('cancelSubscribeBtn').addEventListener('click', function () {
+    document.getElementById('subscribeModal').classList.remove('open');
+  });
+  document.getElementById('subscribeModal').addEventListener('click', function (e) {
+    if (e.target === this) this.classList.remove('open');
+  });
+  document.getElementById('confirmSubscribeBtn').addEventListener('click', function () {
+    const btn = this;
+    btn.disabled = true;
+    btn.textContent = 'جارٍ الاشتراك...';
+    subscribe().then(function () {
+      document.getElementById('subscribeModal').classList.remove('open');
+    }).catch(function (err) {
+      alert('تعذر تسجيل الاشتراك: ' + err.message);
+    }).finally(function () {
+      btn.disabled = false;
+      btn.textContent = 'نعم';
+    });
+  });
+
+  /* ===== عرض الهيرو (المعلومات الأساسية) ===== */
+  const DESC_LIMIT = 160;
+
+  function renderHero() {
+    const hero = document.getElementById('courseHero');
+    const desc = compData.description || '';
+    const isLong = desc.length > DESC_LIMIT;
+    const shownDesc = isLong ? desc.slice(0, DESC_LIMIT).trim() + '…' : desc;
+    const isCourse = compData.type !== 'competition';
+    const subscribeLabel = isCourse ? 'اشتراك في الكورس' : 'انضمام للمسابقة';
+    const lessons = compData.lessons || {};
+    const lessonsCount = Object.keys(lessons).length;
+    const videosCount = Object.keys(lessons).reduce(function (sum, id) { return sum + Object.keys(lessons[id].videos || {}).length; }, 0);
+    const examsCount = Object.keys(lessons).reduce(function (sum, id) { return sum + Object.keys(lessons[id].exams || {}).length; }, 0);
+    const coursePct = isEnrolled ? computeCourseProgress(lessons, progressData) : 0;
+
+    hero.innerHTML =
+      '<div class="course-hero">' +
+        '<div class="hero-media">' +
+          (compData.coverUrl ? '<img class="hero-img" src="' + escapeHtml(compData.coverUrl) + '" alt="">' : '<div class="hero-img hero-img-placeholder">' + icon(isCourse ? 'bookOpen' : 'trophy', 'icon-xl') + '</div>') +
+          '<span class="content-type-badge ' + (isCourse ? 'course' : 'competition') + '">' + icon(isCourse ? 'bookOpen' : 'trophy', 'icon-sm') + ' ' + (isCourse ? 'كورس' : 'مسابقة') + '</span>' +
+        '</div>' +
+        '<div class="hero-body">' +
+          '<h1>' + escapeHtml(compData.title || 'بدون عنوان') + '</h1>' +
+          (desc ? '<p class="preserve-linebreaks">' + escapeHtml(shownDesc) + '</p>' : '') +
+          (isLong ? '<button type="button" class="desc-more-btn" id="descMoreBtn">عرض المزيد <i class="fas fa-chevron-left"></i></button>' : '') +
+          '<div class="hero-stats">' +
+            '<span class="hero-stat"><i class="fas fa-book-open"></i> ' + lessonsCount + ' محاضرة</span>' +
+            '<span class="hero-stat"><i class="fas fa-play"></i> ' + videosCount + ' فيديو</span>' +
+            '<span class="hero-stat"><i class="fas fa-list-check"></i> ' + examsCount + ' اختبار</span>' +
+          '</div>' +
+          (isEnrolled ?
+            '<div class="hero-progress-wrap">' +
+              '<div class="hero-progress-head"><span>تقدّمك في المحتوى</span><span>' + coursePct + '%</span></div>' +
+              '<div class="hero-progress-bar"><div class="hero-progress-fill" style="width:' + coursePct + '%;"></div></div>' +
+            '</div>' : ''
+          ) +
+          '<div class="subscribe-bar">' +
+            (isEnrolled
+              ? '<span class="subscribed-badge"><i class="fas fa-check"></i> أنت مشترك بالفعل</span>'
+              : '<button type="button" class="subscribe-btn" id="subscribeBtn"><i class="fas fa-book-open"></i> ' + subscribeLabel + '</button>') +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    if (isLong) {
+      document.getElementById('descMoreBtn').addEventListener('click', function () {
+        document.getElementById('descModalTitle').textContent = compData.title || '';
+        document.getElementById('descModalBody').textContent = desc; // سيتم عرضها مع white-space: pre-wrap
+        document.getElementById('descModal').classList.add('open');
+      });
+    }
+
+    if (!isEnrolled) {
+      document.getElementById('subscribeBtn').addEventListener('click', function () {
+        document.getElementById('subscribeModalTitle').textContent = subscribeLabel;
+        document.getElementById('subscribeModalBody').textContent = isCourse
+          ? 'هل تريد تأكيد الاشتراك في هذا الكورس؟'
+          : 'هل تريد تأكيد الانضمام لهذه المسابقة؟';
+        document.getElementById('subscribeModal').classList.add('open');
+      });
+    }
+  }
+
+  /* ===== عرض قائمة المحاضرات ===== */
+  function renderLessons() {
+    const wrap = document.getElementById('lessonsWrap');
+    const lessons = compData.lessons || {};
+    const ids = getSortedLessonIds(lessons);
+
+    if (ids.length === 0) {
+      wrap.innerHTML =
+        '<div class="empty-state"><div class="empty-state-icon">' + icon('video', 'icon-xl') + '</div><p>لا توجد محاضرات مضافة بعد</p></div>';
+      return;
+    }
+
+    if (!isEnrolled) {
+      const isCourse = compData.type !== 'competition';
+      wrap.innerHTML =
+        '<div class="enroll-lock-card">' +
+          '<div class="big-icon"><i class="fas fa-lock" style="font-size:46px;"></i></div>' +
+          '<h3>المحتوى مقفول</h3>' +
+          '<p>' + (isCourse ? 'اشترك في الكورس أولاً' : 'انضم للمسابقة أولاً') + ' للوصول إلى المحاضرات والفيديوهات والاختبارات.</p>' +
+        '</div>';
+      return;
+    }
+
+    const now = Date.now();
+    // المحاضرات اللي لسه معادها ما جاش (releaseAt في المستقبل) تتخفي تمامًا من القائمة،
+    // وتظهر تلقائيًا لما يجي معادها (من غير ما نعرضها مقفولة بمعاد النشر)
+    const visibleIds = ids.filter(function (lessonId) {
+      const lesson = lessons[lessonId];
+      return !lesson.releaseAt || lesson.releaseAt <= now;
+    });
+
+    if (visibleIds.length === 0) {
+      wrap.innerHTML =
+        '<div class="empty-state"><div class="empty-state-icon">' + icon('video', 'icon-xl') + '</div><p>لا توجد محاضرات متاحة الآن</p></div>';
+      return;
+    }
+
+    let html = '';
+    visibleIds.forEach(function (lessonId, index) {
+      const lesson = lessons[lessonId];
+      const lessonProgress = progressData[lessonId] || {};
+      const done = !!lessonProgress.completed;
+      const access = getLessonAccessState(lessons, progressData, lessonId);
+      const isLocked = !access.allowed;
+
+      const videos = lesson.videos || {};
+      const exams = lesson.exams || {};
+      const videoIds = Object.keys(videos);
+      const examIds = Object.keys(exams);
+
+      let lockNote = '';
+      if (access.reason === 'release') {
+        lockNote = '<span class="lesson-lock-msg"><i class="fas fa-clock"></i> يُنشر في ' + formatArabicDate(lesson.releaseAt) + '</span>';
+      } else if (access.reason === 'sequence') {
+        lockNote = '<span class="lesson-lock-msg"><i class="fas fa-lock"></i> أكمِل المحاضرة السابقة أولاً</span>';
+      }
+
+      let bodyItems = '';
+      videoIds.forEach(function (vid, vi) {
+        const v = videos[vid];
+        const watched = !!(lessonProgress.videos && lessonProgress.videos[vid] && lessonProgress.videos[vid].watched);
+        bodyItems +=
+          '<a class="content-item video-item" href="video.html?comp=' + encodeURIComponent(compId) + '&lesson=' + encodeURIComponent(lessonId) + '&video=' + encodeURIComponent(vid) + '">' +
+            '<span class="ci-left"><span class="ci-icon"><i class="fas fa-play"></i></span>' + escapeHtml(v.title || ('فيديو الشرح ' + (vi + 1))) + '</span>' +
+            '<span class="ci-right">' + (watched ? '<i class="fas fa-check"></i> تمت المشاهدة' : 'مشاهدة') + '</span>' +
+          '</a>';
+      });
+      examIds.forEach(function (eid, ei) {
+        const ex = exams[eid];
+        // الاختبار له معاد نشر خاص به منفصل عن معاد المحاضرة: لو لسه ما جاش، يتخفي تمامًا زي المحاضرات
+        const examReleasePassed = !ex.releaseAt || ex.releaseAt <= now;
+        if (!examReleasePassed) return;
+        const qCount = ex.questions ? Object.keys(ex.questions).length : 0;
+        const examProgress = lessonProgress.exams && lessonProgress.exams[eid];
+        const examDone = !!(examProgress && examProgress.completed);
+        bodyItems +=
+          '<a class="content-item exam-item" href="exam.html?comp=' + encodeURIComponent(compId) + '&lesson=' + encodeURIComponent(lessonId) + '&exam=' + encodeURIComponent(eid) + '">' +
+            '<span class="ci-left"><span class="ci-icon"><i class="fas fa-list-check"></i></span>' + escapeHtml(ex.title || ('الاختبار ' + (ei + 1))) + '</span>' +
+            '<span class="ci-right">' + (examDone ? '<i class="fas fa-check"></i> أنجزت +' + (examProgress.earnedPoints || 0) : qCount + ' سؤال · ابدأ') + '</span>' +
+          '</a>';
+      });
+
+      const materials = lesson.materials || {};
+      Object.keys(materials).forEach(function (mid) {
+        const m = materials[mid];
+        const isPdf = m.type === 'pdf';
+        bodyItems +=
+          '<a class="content-item material-item ' + (isPdf ? '' : 'image-type') + '" href="' + escapeHtml(m.url) + '" target="_blank" rel="noopener">' +
+            '<span class="ci-left"><span class="ci-icon"><i class="fas fa-' + (isPdf ? 'file-pdf' : 'image') + '"></i></span>' + escapeHtml(m.name || 'مرفق') + '</span>' +
+            '<span class="ci-right"><i class="fas fa-external-link-alt"></i> فتح</span>' +
+          '</a>';
+      });
+      if (!bodyItems) {
+        bodyItems = '<p class="muted" style="font-size:12.5px; padding:8px 4px;">لا يوجد محتوى في هذه المحاضرة بعد.</p>';
+      }
+
+      html +=
+        '<div class="accordion-lesson" data-lesson="' + lessonId + '">' +
+          '<button class="accordion-header" ' + (isLocked ? 'disabled' : '') + '>' +
+            '<span class="lesson-info">' +
+              '<span class="lesson-num ' + (done ? 'done' : '') + '">' +
+                (done ? '<i class="fas fa-check"></i>' : (isLocked ? '<i class="fas fa-lock"></i>' : (index + 1))) +
+              '</span>' +
+              '<span><h4 style="margin:0 0 3px; font-size:15px;">' + escapeHtml(lesson.title || 'محاضرة') + '</h4>' +
+                (isLocked ? lockNote : '<span style="font-size:12px; color:var(--text-muted);">' + videoIds.length + ' فيديو · ' + examIds.length + ' اختبار' + (done ? ' · تم الإنجاز' : '') + '</span>') +
+              '</span>' +
+            '</span>' +
+            (isLocked ? '' : '<span class="chevron"><i class="fas fa-chevron-down"></i></span>') +
+          '</button>' +
+          (isLocked ? '' : '<div class="accordion-body"><div class="accordion-body-inner">' + bodyItems + '</div></div>') +
+        '</div>';
+    });
+
+    wrap.innerHTML = html;
+
+    wrap.querySelectorAll('.accordion-header:not([disabled])').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        btn.closest('.accordion-lesson').classList.toggle('open');
+      });
+    });
+  }
+
+  /* ===== إغلاق نافذة الوصف ===== */
+  document.getElementById('closeDescModal').addEventListener('click', function () {
+    document.getElementById('descModal').classList.remove('open');
+  });
+  document.getElementById('descModal').addEventListener('click', function (e) {
+    if (e.target === this) this.classList.remove('open');
+  });
+</script>
+</body>
+</html>
