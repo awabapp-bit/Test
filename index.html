@@ -2,374 +2,1033 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover">
-<title>تسجيل الدخول — منصة أواب الإلكترونية</title>
-<link rel="icon" href="logo.png">
-<link rel="stylesheet" href="style.css">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>السبورة الذكية</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --chrome:#1B1E25;
+    --chrome-2:#22262F;
+    --chrome-3:#2B303B;
+    --line:rgba(255,255,255,0.08);
+    --line-strong:rgba(255,255,255,0.16);
+    --text:#E9EAEE;
+    --text-dim:#9AA0AC;
+    --accent:#FF6B35;
+    --accent-dim:#FF6B3522;
+    --board-white:#FBFAF6;
+    --board-dark:#14161A;
+    --board-slate:#0E2A2E;
+    --danger:#EF4444;
+  }
+  [data-theme="light"]{
+    --chrome:#F3F1EA;
+    --chrome-2:#EAE7DD;
+    --chrome-3:#E1DDD0;
+    --line:rgba(0,0,0,0.08);
+    --line-strong:rgba(0,0,0,0.14);
+    --text:#22242A;
+    --text-dim:#6B6D75;
+  }
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme="dark"]){
+      --chrome:#F3F1EA;
+      --chrome-2:#EAE7DD;
+      --chrome-3:#E1DDD0;
+      --line:rgba(0,0,0,0.08);
+      --line-strong:rgba(0,0,0,0.14);
+      --text:#22242A;
+      --text-dim:#6B6D75;
+    }
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    height:100%;
+    margin:0;
+    background:var(--chrome);
+    overscroll-behavior:none;
+    -webkit-user-select:none;
+    user-select:none;
+    touch-action:none;
+  }
+  body{
+    font-family:'Cairo',sans-serif;
+    color:var(--text);
+    display:flex;
+    flex-direction:column;
+    height:100vh;
+    height:100dvh;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+
+  /* ============ TOP BAR ============ */
+  #topbar{
+    flex:0 0 auto;
+    height:60px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 16px;
+    background:var(--chrome-2);
+    border-bottom:1px solid var(--line);
+    gap:10px;
+    z-index:40;
+  }
+  .brand{display:flex;align-items:center;gap:10px;min-width:0;}
+  .brand .mark{
+    width:34px;height:34px;border-radius:9px;
+    background:var(--accent);
+    display:flex;align-items:center;justify-content:center;
+    flex:0 0 auto;
+  }
+  .brand .mark svg{width:19px;height:19px;stroke:#fff;}
+  .brand-text{display:flex;flex-direction:column;min-width:0;}
+  .brand-text b{font-size:15px;font-weight:700;line-height:1.2;white-space:nowrap;}
+  .brand-text span{font-size:11.5px;color:var(--text-dim);line-height:1.2;}
+  #status-pill{
+    font-size:12px;color:var(--text-dim);
+    background:var(--chrome-3);
+    border:1px solid var(--line);
+    padding:5px 12px;border-radius:20px;
+    white-space:nowrap;
+  }
+  .top-actions{display:flex;align-items:center;gap:8px;}
+  .icon-btn{
+    width:42px;height:42px;border-radius:11px;
+    border:1px solid var(--line);
+    background:var(--chrome-3);
+    color:var(--text);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+    flex:0 0 auto;
+  }
+  .icon-btn svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
+  .icon-btn:active{transform:scale(0.94);}
+  .icon-btn.solid{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .icon-btn.wide{width:auto;padding:0 16px;gap:8px;font-size:14px;font-weight:600;}
+
+  /* ============ WORKSPACE ============ */
+  #workspace{
+    position:relative;
+    flex:1 1 auto;
+    min-height:0;
+    display:flex;
+  }
+  #viewport{
+    position:relative;
+    flex:1 1 auto;
+    overflow:hidden;
+    background:var(--board-white);
+  }
+  #viewport.bg-dark{background:var(--board-dark);}
+  #viewport.bg-slate{background:var(--board-slate);}
+  #board-content{
+    position:absolute;
+    top:0;left:0;
+    width:3600px;
+    height:2400px;
+    transform-origin:0 0;
+    background-image:radial-gradient(circle, var(--dot-color,rgba(0,0,0,0.12)) 1.6px, transparent 1.6px);
+    background-size:34px 34px;
+  }
+  #viewport.bg-dark #board-content, #viewport.bg-slate #board-content{
+    --dot-color: rgba(255,255,255,0.12);
+  }
+  #viewport.no-grid #board-content{background-image:none;}
+  #draw-canvas, #preview-canvas{
+    position:absolute;top:0;left:0;
+    width:3600px;height:2400px;
+    touch-action:none;
+  }
+  #preview-canvas{pointer-events:none;}
+  #text-layer{
+    position:absolute;top:0;left:0;
+    width:3600px;height:2400px;
+  }
+  .board-text{
+    position:absolute;
+    min-width:24px;min-height:1.3em;
+    outline:none;
+    white-space:pre-wrap;
+    word-break:break-word;
+    line-height:1.35;
+    cursor:text;
+    -webkit-user-select:text;
+    user-select:text;
+    padding:2px 4px;
+    border-radius:4px;
+  }
+  .board-text.editing{
+    box-shadow:0 0 0 2px var(--accent);
+    background:rgba(255,107,53,0.06);
+  }
+
+  /* ============ SIDE TOOLBAR ============ */
+  #toolbar{
+    flex:0 0 auto;
+    width:84px;
+    background:var(--chrome-2);
+    border-left:1px solid var(--line);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:14px 0;
+    gap:6px;
+    overflow-y:auto;
+    z-index:30;
+  }
+  .tool-btn{
+    width:60px;height:56px;
+    border-radius:14px;
+    border:1px solid transparent;
+    background:transparent;
+    color:var(--text-dim);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:4px;
+    cursor:pointer;
+    flex:0 0 auto;
+  }
+  .tool-btn svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
+  .tool-btn span{font-size:10.5px;font-weight:600;}
+  .tool-btn:active{transform:scale(0.95);}
+  .tool-btn.active{
+    background:var(--accent-dim);
+    color:var(--accent);
+    border-color:var(--accent);
+  }
+  .tool-sep{width:44px;height:1px;background:var(--line);margin:6px 0;flex:0 0 auto;}
+
+  /* ============ CONTEXT BAR (colors/size/shapes) ============ */
+  #context-bar{
+    position:absolute;
+    left:16px;
+    top:16px;
+    background:var(--chrome-2);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:12px 14px;
+    display:none;
+    flex-direction:column;
+    gap:12px;
+    z-index:35;
+    max-width:230px;
+  }
+  #context-bar.show{display:flex;}
+  .ctx-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .ctx-label{font-size:11px;color:var(--text-dim);font-weight:600;}
+  .swatch{
+    width:28px;height:28px;border-radius:50%;
+    border:2px solid var(--line-strong);
+    cursor:pointer;
+    padding:0;
+    flex:0 0 auto;
+  }
+  .swatch.active{border-color:var(--text);box-shadow:0 0 0 2px var(--accent);}
+  #custom-color{
+    width:28px;height:28px;border-radius:50%;
+    border:2px solid var(--line-strong);
+    padding:0;overflow:hidden;background:none;cursor:pointer;
+  }
+  #custom-color::-webkit-color-swatch-wrapper{padding:0;}
+  #custom-color::-webkit-color-swatch{border:none;border-radius:50%;}
+  #size-range{width:120px;accent-color:var(--accent);}
+  .shape-opt{
+    width:36px;height:36px;border-radius:10px;
+    border:1px solid var(--line);
+    background:var(--chrome-3);
+    color:var(--text-dim);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+  }
+  .shape-opt svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
+  .shape-opt.active{background:var(--accent-dim);color:var(--accent);border-color:var(--accent);}
+
+  /* ============ ZOOM DOCK ============ */
+  #zoom-dock{
+    position:absolute;
+    bottom:16px;
+    left:16px;
+    display:flex;
+    align-items:center;
+    gap:4px;
+    background:var(--chrome-2);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:4px;
+    z-index:35;
+  }
+  #zoom-dock button{
+    width:38px;height:38px;border-radius:10px;border:none;
+    background:transparent;color:var(--text);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+  }
+  #zoom-dock button svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;}
+  #zoom-dock button:active{background:var(--chrome-3);}
+  #zoom-pct{font-size:12px;color:var(--text-dim);min-width:42px;text-align:center;font-weight:600;}
+
+  /* ============ TOAST ============ */
+  #toast{
+    position:absolute;
+    bottom:16px;left:50%;
+    transform:translateX(-50%) translateY(20px);
+    background:var(--chrome-3);
+    border:1px solid var(--line-strong);
+    color:var(--text);
+    padding:10px 18px;
+    border-radius:12px;
+    font-size:13px;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s ease, transform .2s ease;
+    z-index:60;
+    white-space:nowrap;
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  /* ============ CONFIRM MODAL ============ */
+  #confirm-overlay{
+    position:fixed;inset:0;
+    background:rgba(0,0,0,0.5);
+    display:none;
+    align-items:center;justify-content:center;
+    z-index:80;
+  }
+  #confirm-overlay.show{display:flex;}
+  #confirm-box{
+    background:var(--chrome-2);
+    border:1px solid var(--line-strong);
+    border-radius:16px;
+    padding:22px;
+    width:280px;
+    text-align:center;
+  }
+  #confirm-box p{font-size:14px;margin:0 0 16px;color:var(--text);}
+  #confirm-box .row{display:flex;gap:10px;}
+  #confirm-box button{
+    flex:1;padding:11px;border-radius:10px;border:1px solid var(--line);
+    background:var(--chrome-3);color:var(--text);font-family:'Cairo',sans-serif;
+    font-size:13.5px;font-weight:600;cursor:pointer;
+  }
+  #confirm-box button.danger{background:var(--danger);border-color:var(--danger);color:#fff;}
+
+  body.pseudo-fs{
+    position:fixed;
+    inset:0;
+    width:100vw;
+    height:100vh;
+    z-index:2147483000;
+  }
+
+  @media (max-width:640px){
+    #toolbar{width:68px;}
+    .tool-btn{width:50px;height:50px;}
+    .tool-btn span{display:none;}
+    .brand-text span{display:none;}
+    #status-pill{display:none;}
+  }
+</style>
 </head>
 <body>
 
-<div class="auth-screen">
-
-  <aside class="identity-panel">
-    <svg class="lattice" viewBox="0 0 600 900" preserveAspectRatio="xMidYMid slice">
-      <defs>
-        <pattern id="star8" width="120" height="120" patternUnits="userSpaceOnUse">
-          <g fill="none" stroke="#c8a24a" stroke-width="1">
-            <path d="M60 6 L78 42 L114 24 L96 60 L114 96 L78 78 L60 114 L42 78 L6 96 L24 60 L6 24 L42 42 Z"/>
-            <circle cx="60" cy="60" r="3" fill="#c8a24a" stroke="none"/>
-          </g>
-        </pattern>
-      </defs>
-      <rect width="600" height="900" fill="url(#star8)"/>
-    </svg>
-
-    <div class="identity-top">
-      <img src="logo.png" alt="شعار منصة أواب" onerror="this.style.display='none'">
-      <div class="identity-brandname">
-        منصة أواب الإلكترونية
-        <span>مسابقات وكورسات دينية</span>
+  <div id="topbar">
+    <div class="brand">
+      <div class="mark">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M3 5.5C3 4.7 3.7 4 4.5 4H19.5C20.3 4 21 4.7 21 5.5V16.5C21 17.3 20.3 18 19.5 18H13L8 21V18H4.5C3.7 18 3 17.3 3 16.5V5.5Z" stroke-width="1.8" stroke-linejoin="round"/><path d="M7 8.5H17M7 12H13" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </div>
+      <div class="brand-text">
+        <b>السبورة الذكية</b>
+        <span>لوحة عرض تفاعلية للشاشات الكبيرة</span>
       </div>
     </div>
-
-    <div class="identity-mid">
-      <h1>ارتقِ بعلمك، <em>وسابق</em><br>إلى الخيرات</h1>
-      <p>سجّل دخولك لمتابعة كورساتك ومسابقاتك، ومتابعة نقاطك ومستواك ومحاضراتك أولاً بأول.</p>
+    <div class="top-actions">
+      <span id="status-pill">جاهزة للكتابة</span>
+      <button class="icon-btn" id="btn-save" title="حفظ كصورة">
+        <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M4 17v2.5A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5V17"/></svg>
+      </button>
+      <button class="icon-btn solid" id="btn-fullscreen" title="ملء الشاشة">
+        <svg viewBox="0 0 24 24" id="fs-icon"><path d="M4 9V5.5A1.5 1.5 0 0 1 5.5 4H9M15 4h3.5A1.5 1.5 0 0 1 20 5.5V9M20 15v3.5a1.5 1.5 0 0 1-1.5 1.5H15M9 20H5.5A1.5 1.5 0 0 1 4 18.5V15"/></svg>
+      </button>
     </div>
+  </div>
 
-    <div class="identity-bottom">
-      <div class="identity-stat"><b>+120</b><span>كورساً دينياً</span></div>
-      <div class="identity-stat"><b>+300</b><span>مسابقة منعقدة</span></div>
-      <div class="identity-stat"><b>+40 ألف</b><span>مشارك ومتعلم</span></div>
-    </div>
-  </aside>
-
-  <div class="auth-shell">
-    <div class="auth-panel">
-      <div class="auth-brand">
-        <h1>مرحباً بعودتك</h1>
-        <p>سجّل دخولك لمتابعة تقدّمك ونقاطك</p>
+  <div id="workspace">
+    <div id="viewport">
+      <div id="board-content">
+        <canvas id="draw-canvas" width="3600" height="2400"></canvas>
+        <canvas id="preview-canvas" width="3600" height="2400"></canvas>
+        <div id="text-layer"></div>
       </div>
 
-      <p class="basmala">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
-
-      <div class="form-msg" id="formMsg"></div>
-
-      <form id="loginForm" novalidate>
-        <div class="field" id="emailField">
-          <label for="email">البريد الإلكتروني المسجل</label>
-          <input type="email" id="email" autocomplete="username" placeholder="example@email.com" required>
-          <div class="field-error">من فضلك أدخل بريدًا إلكترونيًا صحيحًا</div>
+      <div id="context-bar">
+        <div class="ctx-row" id="shape-row" style="display:none;">
+          <button class="shape-opt" data-shape="line" title="خط">
+            <svg viewBox="0 0 24 24"><path d="M4 20 20 4"/></svg>
+          </button>
+          <button class="shape-opt" data-shape="arrow" title="سهم">
+            <svg viewBox="0 0 24 24"><path d="M4 20 20 4M20 4h-7M20 4v7"/></svg>
+          </button>
+          <button class="shape-opt" data-shape="rect" title="مستطيل">
+            <svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="1.5"/></svg>
+          </button>
+          <button class="shape-opt" data-shape="ellipse" title="دائرة">
+            <svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="8" ry="6.5"/></svg>
+          </button>
         </div>
-
-        <div class="field" id="passwordField">
-          <label for="password">كلمة المرور</label>
-          <div class="password-toggle-wrap">
-            <input type="password" id="password" autocomplete="current-password" placeholder="••••••••" required>
-            <button type="button" class="password-toggle" id="togglePass" aria-label="إظهار كلمة المرور"></button>
-          </div>
-          <div class="field-error">كلمة المرور مطلوبة</div>
+        <div class="ctx-row" id="color-row">
+          <span class="ctx-label">اللون</span>
         </div>
+        <div class="ctx-row">
+          <span class="ctx-label">السُمك</span>
+          <input type="range" id="size-range" min="1" max="40" value="4">
+        </div>
+      </div>
 
-        <label class="checkbox-row">
-          <input type="checkbox" id="rememberMe" checked>
-          تذكرني على هذا الجهاز
-        </label>
+      <div id="zoom-dock">
+        <button id="zoom-out" title="تصغير"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+        <span id="zoom-pct">100%</span>
+        <button id="zoom-in" title="تكبير"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+        <button id="zoom-reset" title="إعادة الضبط"><svg viewBox="0 0 24 24"><path d="M4 4v6h6M20 20v-6h-6M4.5 9A7.5 7.5 0 0 1 19 9M19.5 15a7.5 7.5 0 0 1-14.5 0"/></svg></button>
+      </div>
 
-        <a href="#" class="forgot-link" id="openForgotBtn">نسيت كلمة المرور؟</a>
+      <div id="toast"></div>
+    </div>
 
-        <button type="submit" class="btn btn-primary" id="loginBtn"><span id="loginBtnLabel">تسجيل الدخول</span></button>
-      </form>
+    <div id="toolbar">
+      <button class="tool-btn" data-tool="move" title="تحريك اللوحة">
+        <svg viewBox="0 0 24 24"><path d="M12 3v5M12 21v-5M3 12h5M21 12h-5M12 3l-2 2M12 3l2 2M12 21l-2-2M12 21l2-2M3 12l2-2M3 12l2 2M21 12l-2-2M21 12l-2 2"/></svg>
+        <span>تحريك</span>
+      </button>
+      <button class="tool-btn active" data-tool="pen" title="قلم">
+        <svg viewBox="0 0 24 24"><path d="M4 20l1-4.5L15.5 5 19 8.5 8.5 19 4 20z"/><path d="M13.5 6.5 17.5 10.5"/></svg>
+        <span>قلم</span>
+      </button>
+      <button class="tool-btn" data-tool="highlighter" title="ماركر">
+        <svg viewBox="0 0 24 24"><path d="M9 15 4 20M6.5 17.5 15 9l3.5 3.5L10 21H6.5z"/><path d="M12.5 5.5 18.5 11.5 20.5 9.5 14.5 3.5z"/></svg>
+        <span>ماركر</span>
+      </button>
+      <button class="tool-btn" data-tool="eraser" title="ممحاة">
+        <svg viewBox="0 0 24 24"><path d="M18 13 9 4a1.5 1.5 0 0 0-2 0L3 8a1.5 1.5 0 0 0 0 2l8.5 8.5H16"/><path d="M8.5 20h11"/></svg>
+        <span>ممحاة</span>
+      </button>
+      <button class="tool-btn" data-tool="text" title="نص">
+        <svg viewBox="0 0 24 24"><path d="M5 6h14M12 6v13"/></svg>
+        <span>كتابة</span>
+      </button>
+      <button class="tool-btn" data-tool="shape" title="أشكال">
+        <svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="8" height="8" rx="1.3"/><circle cx="16.5" cy="16.5" r="4.3"/></svg>
+        <span>أشكال</span>
+      </button>
 
-      <div class="auth-switch">
-        ليس لديك حساب؟ <a href="register.html">إنشاء حساب جديد</a>
+      <div class="tool-sep"></div>
+
+      <button class="tool-btn" id="btn-undo" title="تراجع">
+        <svg viewBox="0 0 24 24"><path d="M9 7 4 12l5 5"/><path d="M4 12h11a5 5 0 0 1 0 10h-1"/></svg>
+        <span>تراجع</span>
+      </button>
+      <button class="tool-btn" id="btn-redo" title="إعادة">
+        <svg viewBox="0 0 24 24"><path d="M15 7l5 5-5 5"/><path d="M20 12H9a5 5 0 0 0 0 10h1"/></svg>
+        <span>إعادة</span>
+      </button>
+      <button class="tool-btn" id="btn-clear" title="مسح الكل">
+        <svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/></svg>
+        <span>مسح الكل</span>
+      </button>
+
+      <div class="tool-sep"></div>
+
+      <button class="tool-btn" id="btn-grid" title="الشبكة">
+        <svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="1.5"/><path d="M9 3.5v17M14.5 3.5v17M3.5 9h17M3.5 14.5h17"/></svg>
+        <span>الشبكة</span>
+      </button>
+      <button class="tool-btn" id="btn-bg" title="خلفية اللوحة">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17"/></svg>
+        <span>الخلفية</span>
+      </button>
+    </div>
+  </div>
+
+  <div id="confirm-overlay">
+    <div id="confirm-box">
+      <p>هل تريد مسح كل محتوى اللوحة؟ لا يمكن التراجع عن هذا بعد المسح.</p>
+      <div class="row">
+        <button id="confirm-cancel">إلغاء</button>
+        <button class="danger" id="confirm-ok">مسح الكل</button>
       </div>
     </div>
   </div>
 
-</div>
-
-<!-- نافذة نسيت كلمة المرور -->
-<div class="modal-overlay" id="forgotModal">
-  <div class="modal">
-    <button class="modal-close" id="closeForgotModal"></button>
-
-    <div id="forgotStepConfirm">
-      <div class="forgot-icon-circle"><span id="forgotIcon"></span></div>
-      <h3 style="text-align:center;">نسيت كلمة المرور؟</h3>
-      <p class="muted" style="text-align:center; margin-bottom:18px;">سيتم إرسال رسالة على بريدك الإلكتروني لإعادة تعيين كلمة المرور. هل ترغب في هذا؟</p>
-
-      <div class="field">
-        <label for="forgotEmail">البريد الإلكتروني</label>
-        <input type="email" id="forgotEmail" placeholder="example@email.com">
-      </div>
-
-      <div class="form-msg" id="forgotMsg"></div>
-
-      <div style="display:flex; gap:10px;">
-        <button class="btn btn-primary" id="confirmSendBtn"><span id="confirmSendBtnLabel">نعم، أرسل الرسالة</span></button>
-        <button type="button" class="btn btn-outline" id="cancelForgotBtn">إلغاء</button>
-      </div>
-    </div>
-
-    <div id="forgotStepDone" style="display:none;">
-      <div class="forgot-icon-circle success"><span id="doneIcon"></span></div>
-      <h3 style="text-align:center;">تم إرسال الرسالة</h3>
-      <p class="muted" style="text-align:center;">لو مش لاقيها في بريدك الوارد، اتبع الخطوات دي:</p>
-
-      <ul class="instruction-steps">
-        <li><span class="step-num">1</span><span>ادخل على تطبيق أو موقع <strong>Gmail</strong></span></li>
-        <li><span class="step-num">2</span><span>هتلاقي في القائمة تصنيف اسمه <strong>Spam</strong> (أو "رسائل إلكترونية مزعجة" بالعربي)</span></li>
-        <li><span class="step-num">3</span><span>لما تدخل عليه هتلاقي الرسالة، والمرسل هيكون باسم <strong>Awab</strong></span></li>
-      </ul>
-
-      <button type="button" class="btn btn-primary" id="closeDoneBtn">تمام، فهمت</button>
-    </div>
-  </div>
-</div>
-
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-<script src="firebase-config.js"></script>
-<script src="icons.js"></script>
-<script src="app-shell.js"></script>
 <script>
-  document.getElementById('togglePass').innerHTML = icon('eye');
-  document.getElementById('forgotIcon').innerHTML = icon('envelope', 'icon-lg');
-  document.getElementById('doneIcon').innerHTML = icon('circleCheck', 'icon-lg');
-  document.getElementById('closeForgotModal').innerHTML = icon('xmark');
+(function(){
+  "use strict";
 
-  const RESET_SITE_URL = 'https://awabapp-bit.github.io/awab-reset-site/';
+  var viewport = document.getElementById('viewport');
+  var boardContent = document.getElementById('board-content');
+  var canvas = document.getElementById('draw-canvas');
+  var preview = document.getElementById('preview-canvas');
+  var ctx = canvas.getContext('2d');
+  var pctx = preview.getContext('2d');
+  var textLayer = document.getElementById('text-layer');
+  var toolbar = document.getElementById('toolbar');
+  var contextBar = document.getElementById('context-bar');
+  var colorRow = document.getElementById('color-row');
+  var shapeRow = document.getElementById('shape-row');
+  var sizeRange = document.getElementById('size-range');
+  var toastEl = document.getElementById('toast');
 
-  // ✅ عرض رسالة إذا تم تسجيل الخروج بسبب جلسة جديدة
-  if (new URLSearchParams(window.location.search).get('session_killed') === '1') {
-    document.getElementById('formMsg').innerHTML = icon('exclamation-triangle', 'icon-sm') +
-      ' تم رصد محاولة تسجيل دخول جديدة إلى حسابك، فتم إنهاء جلستك الحالية تلقائيًا للحفاظ على أمان حسابك. ' +
-      'إذا كنت تشك أن شخصًا غير معروف قام بالدخول إلى حسابك، برجاء التواصل مع الدعم الفني فورًا.';
-    document.getElementById('formMsg').className = 'form-msg show error';
+  var BOARD_W = 3600, BOARD_H = 2400;
+
+  var state = {
+    tool: 'pen',
+    shape: 'rect',
+    color: '#1F2933',
+    size: 4,
+    pan: {x: 0, y: 0},
+    zoom: 1,
+    grid: true,
+    bgMode: 0
+  };
+
+  var bgModes = ['', 'bg-dark', 'bg-slate'];
+  var bgLabels = ['أبيض', 'داكن', 'أخضر لوحي'];
+
+  var palette = ['#1F2933','#E24B4A','#378ADD','#639922','#EF9F27','#7F77DD','#FFFFFF'];
+
+  function buildSwatches(){
+    palette.forEach(function(c){
+      var b = document.createElement('button');
+      b.className = 'swatch';
+      b.style.background = c;
+      if(c === '#FFFFFF'){ b.style.boxShadow = 'inset 0 0 0 1px rgba(0,0,0,0.2)'; }
+      b.dataset.color = c;
+      if(c === state.color) b.classList.add('active');
+      b.addEventListener('click', function(){
+        state.color = c;
+        document.querySelectorAll('.swatch').forEach(function(s){s.classList.remove('active');});
+        b.classList.add('active');
+      });
+      colorRow.appendChild(b);
+    });
+    var customWrap = document.createElement('input');
+    customWrap.type = 'color';
+    customWrap.id = 'custom-color';
+    customWrap.value = '#FF6B35';
+    customWrap.addEventListener('input', function(){
+      state.color = customWrap.value;
+      document.querySelectorAll('.swatch').forEach(function(s){s.classList.remove('active');});
+    });
+    colorRow.appendChild(customWrap);
+  }
+  buildSwatches();
+
+  function showToast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(function(){ toastEl.classList.remove('show'); }, 1700);
   }
 
-  auth.onAuthStateChanged(function (user) {
-    if (!user) return;
-    db.ref('users/' + user.uid).once('value').then(function (snap) {
-      const data = snap.val();
-      if (data && data.blocked === true) { auth.signOut(); return; }
-      window.location.href = 'home.html';
+  /* ---------- transform ---------- */
+  function applyTransform(){
+    boardContent.style.transform = 'translate('+state.pan.x+'px,'+state.pan.y+'px) scale('+state.zoom+')';
+    document.getElementById('zoom-pct').textContent = Math.round(state.zoom*100)+'%';
+  }
+  function clampPan(){
+    var vw = viewport.clientWidth, vh = viewport.clientHeight;
+    var cw = BOARD_W*state.zoom, ch = BOARD_H*state.zoom;
+    var minX = Math.min(0, vw-cw), minY = Math.min(0, vh-ch);
+    state.pan.x = Math.max(minX, Math.min(0, state.pan.x));
+    state.pan.y = Math.max(minY, Math.min(0, state.pan.y));
+  }
+  function centerInit(){
+    var vw = viewport.clientWidth, vh = viewport.clientHeight;
+    state.pan.x = Math.min(0,(vw-BOARD_W)/2);
+    state.pan.y = Math.min(0,(vh-BOARD_H)/2);
+    clampPan();
+    applyTransform();
+  }
+  window.addEventListener('resize', function(){ clampPan(); applyTransform(); });
+
+  function screenToBoard(clientX, clientY){
+    var r = viewport.getBoundingClientRect();
+    return {
+      x: (clientX - r.left - state.pan.x)/state.zoom,
+      y: (clientY - r.top - state.pan.y)/state.zoom
+    };
+  }
+
+  /* ---------- zoom controls ---------- */
+  function setZoom(z, anchorClientX, anchorClientY){
+    z = Math.max(0.4, Math.min(3, z));
+    var r = viewport.getBoundingClientRect();
+    var ax = anchorClientX!==undefined ? anchorClientX - r.left : viewport.clientWidth/2;
+    var ay = anchorClientY!==undefined ? anchorClientY - r.top : viewport.clientHeight/2;
+    var boardX = (ax - state.pan.x)/state.zoom;
+    var boardY = (ay - state.pan.y)/state.zoom;
+    state.zoom = z;
+    state.pan.x = ax - boardX*state.zoom;
+    state.pan.y = ay - boardY*state.zoom;
+    clampPan();
+    applyTransform();
+  }
+  document.getElementById('zoom-in').addEventListener('click', function(){ setZoom(state.zoom+0.15); });
+  document.getElementById('zoom-out').addEventListener('click', function(){ setZoom(state.zoom-0.15); });
+  document.getElementById('zoom-reset').addEventListener('click', function(){ state.zoom=1; centerInit(); });
+
+  /* ---------- tool selection ---------- */
+  var toolButtons = document.querySelectorAll('.tool-btn[data-tool]');
+  function setTool(tool){
+    state.tool = tool;
+    toolButtons.forEach(function(b){ b.classList.toggle('active', b.dataset.tool===tool); });
+    var showCtx = ['pen','highlighter','shape','eraser'].indexOf(tool) !== -1;
+    contextBar.classList.toggle('show', showCtx);
+    shapeRow.style.display = tool==='shape' ? 'flex' : 'none';
+    colorRow.style.display = tool==='eraser' ? 'none' : 'flex';
+    viewport.style.cursor = tool==='move' ? 'grab' : (tool==='text' ? 'text' : 'crosshair');
+    var labels = {move:'تحريك اللوحة',pen:'وضع القلم',highlighter:'وضع الماركر',eraser:'وضع الممحاة',text:'اضغط لإضافة نص',shape:'ارسم شكلًا بالسحب'};
+    document.getElementById('status-pill').textContent = labels[tool] || 'جاهزة';
+  }
+  toolButtons.forEach(function(b){
+    b.addEventListener('click', function(){ setTool(b.dataset.tool); });
+  });
+  document.querySelectorAll('.shape-opt').forEach(function(b){
+    b.addEventListener('click', function(){
+      state.shape = b.dataset.shape;
+      document.querySelectorAll('.shape-opt').forEach(function(s){s.classList.remove('active');});
+      b.classList.add('active');
     });
   });
+  document.querySelector('.shape-opt[data-shape="rect"]').classList.add('active');
+  sizeRange.addEventListener('input', function(){ state.size = parseInt(sizeRange.value,10); });
+  setTool('pen');
 
-  if (new URLSearchParams(window.location.search).get('blocked') === '1') {
-    document.getElementById('formMsg').innerHTML = icon('lock', 'icon-sm') + ' تم وقف حسابك من قبل إدارة المنصة. تواصل مع الدعم الفني لمزيد من التفاصيل.';
-    document.getElementById('formMsg').className = 'form-msg show error';
-  }
-
-  const form = document.getElementById('loginForm');
-  const formMsg = document.getElementById('formMsg');
-  const loginBtn = document.getElementById('loginBtn');
-  const togglePass = document.getElementById('togglePass');
-  const passwordInput = document.getElementById('password');
-
-  togglePass.addEventListener('click', function () {
-    const isPass = passwordInput.type === 'password';
-    passwordInput.type = isPass ? 'text' : 'password';
-    togglePass.innerHTML = icon(isPass ? 'eyeSlash' : 'eye');
-    togglePass.setAttribute('aria-label', isPass ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور');
+  /* ---------- grid / background ---------- */
+  document.getElementById('btn-grid').addEventListener('click', function(){
+    state.grid = !state.grid;
+    viewport.classList.toggle('no-grid', !state.grid);
+    showToast(state.grid ? 'الشبكة مفعّلة' : 'الشبكة غير مفعّلة');
+  });
+  document.getElementById('btn-bg').addEventListener('click', function(){
+    state.bgMode = (state.bgMode+1) % bgModes.length;
+    bgModes.forEach(function(m){ if(m) viewport.classList.remove(m); });
+    if(bgModes[state.bgMode]) viewport.classList.add(bgModes[state.bgMode]);
+    showToast('الخلفية: '+bgLabels[state.bgMode]);
   });
 
-  const savedEmail = localStorage.getItem('awab_last_email');
-  if (savedEmail) document.getElementById('email').value = savedEmail;
+  /* ---------- history (undo/redo) ---------- */
+  var history = [];
+  var histIndex = -1;
+  var MAX_HIST = 40;
 
-  function showMsg(text, type) {
-    formMsg.textContent = text;
-    formMsg.className = 'form-msg show ' + type;
+  function serializeTexts(){
+    var arr = [];
+    textLayer.querySelectorAll('.board-text').forEach(function(el){
+      arr.push({
+        text: el.textContent,
+        left: el.style.left, top: el.style.top,
+        color: el.style.color, fontSize: el.style.fontSize
+      });
+    });
+    return arr;
   }
-
-  // ✅ حالة تحميل احترافية للأزرار: تعطيل + Spinner + نص متغيّر
-  function setBtnLoading(btn, labelEl, loading, loadingText, idleText) {
-    btn.disabled = loading;
-    if (loading) {
-      btn.innerHTML = '<span class="btn-spinner"></span><span>' + loadingText + '</span>';
-    } else {
-      btn.innerHTML = '<span>' + idleText + '</span>';
-    }
+  function restoreTexts(arr){
+    textLayer.innerHTML = '';
+    arr.forEach(function(t){
+      var el = makeTextEl(t.left, t.top, t.color, t.fontSize);
+      el.textContent = t.text;
+    });
   }
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-  function setFieldError(fieldEl, on) {
-    fieldEl.classList.toggle('has-error', !!on);
+  function pushHistory(){
+    history = history.slice(0, histIndex+1);
+    history.push({ img: canvas.toDataURL('image/png'), texts: serializeTexts() });
+    if(history.length > MAX_HIST) history.shift();
+    histIndex = history.length-1;
   }
-
-  const emailField = document.getElementById('emailField');
-  const passwordField = document.getElementById('passwordField');
-  document.getElementById('email').addEventListener('input', function () { setFieldError(emailField, false); });
-  passwordInput.addEventListener('input', function () { setFieldError(passwordField, false); });
-
-  function mapError(code) {
-    const map = {
-      'auth/invalid-email': 'صيغة البريد الإلكتروني غير صحيحة',
-      'auth/user-not-found': 'لا يوجد حساب مسجل بهذا البريد الإلكتروني',
-      'auth/wrong-password': 'كلمة المرور غير صحيحة',
-      'auth/invalid-credential': 'البريد الإلكتروني أو كلمة المرور غير صحيحة',
-      'auth/too-many-requests': 'محاولات كثيرة، حاول مرة أخرى بعد قليل',
-      'auth/network-request-failed': 'تعذر الاتصال بالشبكة، تحقق من الإنترنت',
-      'auth/operation-not-allowed': 'تسجيل الدخول بالبريد وكلمة المرور غير مفعّل في Firebase بعد',
-      'auth/unauthorized-domain': 'هذا النطاق غير مصرّح له بالدخول من إعدادات Firebase'
+  function applyHistoryEntry(entry, done){
+    var img = new Image();
+    img.onload = function(){
+      ctx.clearRect(0,0,BOARD_W,BOARD_H);
+      ctx.drawImage(img,0,0);
+      restoreTexts(entry.texts);
+      if(done) done();
     };
-    return map[code] || ('حدث خطأ أثناء تسجيل الدخول (' + (code || 'غير معروف') + ')، حاول مرة أخرى');
+    img.src = entry.img;
+  }
+  function undo(){
+    if(histIndex <= 0){
+      ctx.clearRect(0,0,BOARD_W,BOARD_H);
+      textLayer.innerHTML = '';
+      histIndex = 0;
+      if(history.length===0){ pushHistory(); }
+      return;
+    }
+    histIndex--;
+    applyHistoryEntry(history[histIndex]);
+  }
+  function redo(){
+    if(histIndex >= history.length-1) return;
+    histIndex++;
+    applyHistoryEntry(history[histIndex]);
+  }
+  document.getElementById('btn-undo').addEventListener('click', undo);
+  document.getElementById('btn-redo').addEventListener('click', redo);
+  pushHistory();
+
+  /* ---------- clear ---------- */
+  var confirmOverlay = document.getElementById('confirm-overlay');
+  document.getElementById('btn-clear').addEventListener('click', function(){
+    confirmOverlay.classList.add('show');
+  });
+  document.getElementById('confirm-cancel').addEventListener('click', function(){
+    confirmOverlay.classList.remove('show');
+  });
+  document.getElementById('confirm-ok').addEventListener('click', function(){
+    ctx.clearRect(0,0,BOARD_W,BOARD_H);
+    textLayer.innerHTML = '';
+    pushHistory();
+    confirmOverlay.classList.remove('show');
+    showToast('تم مسح اللوحة');
+  });
+
+  /* ---------- text tool ---------- */
+  function makeTextEl(left, top, color, fontSize){
+    var el = document.createElement('div');
+    el.className = 'board-text';
+    el.contentEditable = 'true';
+    el.style.left = left; el.style.top = top;
+    el.style.color = color || state.color;
+    el.style.fontSize = fontSize || (Math.max(18, state.size*6)+'px');
+    textLayer.appendChild(el);
+    var committed = false;
+    function commit(){
+      if(committed) return;
+      committed = true;
+      el.classList.remove('editing');
+      el.contentEditable = 'false';
+      if(el.textContent.trim()===''){
+        el.remove();
+      } else {
+        pushHistory();
+      }
+    }
+    el.addEventListener('blur', commit);
+    el.addEventListener('keydown', function(e){
+      if(e.key === 'Escape'){ e.preventDefault(); el.blur(); }
+    });
+    el.addEventListener('pointerdown', function(e){
+      e.stopPropagation();
+    });
+    return el;
   }
 
-  form.addEventListener('submit', function (e) {
+  /* ---------- drawing state ---------- */
+  var drawing = false;
+  var lastPt = null;
+  var startPt = null;
+  var panning = false;
+  var panStart = null;
+  var panOrigin = null;
+
+  function setStrokeStyle(isHighlight){
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    if(isHighlight){
+      ctx.globalAlpha = 0.35;
+      ctx.lineWidth = Math.max(state.size*2.4, 14);
+      ctx.strokeStyle = state.color;
+      ctx.globalCompositeOperation = 'source-over';
+    } else {
+      ctx.globalAlpha = 1;
+      ctx.lineWidth = state.size;
+      ctx.strokeStyle = state.color;
+      ctx.globalCompositeOperation = 'source-over';
+    }
+  }
+
+  function drawShapePreview(shape, from, to, color, size){
+    pctx.clearRect(0,0,BOARD_W,BOARD_H);
+    pctx.lineJoin='round'; pctx.lineCap='round';
+    pctx.strokeStyle = color; pctx.lineWidth = size; pctx.globalAlpha=1;
+    pctx.beginPath();
+    if(shape==='line'){
+      pctx.moveTo(from.x,from.y); pctx.lineTo(to.x,to.y);
+    } else if(shape==='rect'){
+      pctx.rect(Math.min(from.x,to.x), Math.min(from.y,to.y), Math.abs(to.x-from.x), Math.abs(to.y-from.y));
+    } else if(shape==='ellipse'){
+      var cx=(from.x+to.x)/2, cy=(from.y+to.y)/2;
+      var rx=Math.abs(to.x-from.x)/2, ry=Math.abs(to.y-from.y)/2;
+      pctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);
+    } else if(shape==='arrow'){
+      var ang = Math.atan2(to.y-from.y, to.x-from.x);
+      var headLen = Math.max(14, size*3.2);
+      pctx.moveTo(from.x,from.y); pctx.lineTo(to.x,to.y);
+      pctx.moveTo(to.x,to.y);
+      pctx.lineTo(to.x-headLen*Math.cos(ang-0.5), to.y-headLen*Math.sin(ang-0.5));
+      pctx.moveTo(to.x,to.y);
+      pctx.lineTo(to.x-headLen*Math.cos(ang+0.5), to.y-headLen*Math.sin(ang+0.5));
+    }
+    pctx.stroke();
+  }
+  function commitShape(shape, from, to, color, size){
+    ctx.lineJoin='round'; ctx.lineCap='round';
+    ctx.strokeStyle = color; ctx.lineWidth = size; ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.beginPath();
+    if(shape==='line'){
+      ctx.moveTo(from.x,from.y); ctx.lineTo(to.x,to.y);
+    } else if(shape==='rect'){
+      ctx.rect(Math.min(from.x,to.x), Math.min(from.y,to.y), Math.abs(to.x-from.x), Math.abs(to.y-from.y));
+    } else if(shape==='ellipse'){
+      var cx=(from.x+to.x)/2, cy=(from.y+to.y)/2;
+      var rx=Math.abs(to.x-from.x)/2, ry=Math.abs(to.y-from.y)/2;
+      ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);
+    } else if(shape==='arrow'){
+      var ang = Math.atan2(to.y-from.y, to.x-from.x);
+      var headLen = Math.max(14, size*3.2);
+      ctx.moveTo(from.x,from.y); ctx.lineTo(to.x,to.y);
+      ctx.moveTo(to.x,to.y);
+      ctx.lineTo(to.x-headLen*Math.cos(ang-0.5), to.y-headLen*Math.sin(ang-0.5));
+      ctx.moveTo(to.x,to.y);
+      ctx.lineTo(to.x-headLen*Math.cos(ang+0.5), to.y-headLen*Math.sin(ang+0.5));
+    }
+    ctx.stroke();
+    pctx.clearRect(0,0,BOARD_W,BOARD_H);
+  }
+
+  /* ---------- pointer handling ---------- */
+  var activePointerId = null;
+
+  viewport.addEventListener('pointerdown', function(e){
+    if(e.target.closest('#context-bar') || e.target.closest('#zoom-dock')) return;
+    if(e.target.classList && e.target.classList.contains('board-text')) return;
+    activePointerId = e.pointerId;
+    viewport.setPointerCapture(e.pointerId);
+    var pt = screenToBoard(e.clientX, e.clientY);
+
+    if(state.tool === 'move'){
+      panning = true;
+      panStart = {x:e.clientX, y:e.clientY};
+      panOrigin = {x:state.pan.x, y:state.pan.y};
+      viewport.style.cursor = 'grabbing';
+      return;
+    }
+    if(state.tool === 'text'){
+      var el = makeTextEl(pt.x+'px', pt.y+'px', state.color, Math.max(18,state.size*6)+'px');
+      el.classList.add('editing');
+      setTimeout(function(){ el.focus(); }, 0);
+      return;
+    }
+    if(state.tool === 'shape'){
+      startPt = pt;
+      drawing = true;
+      return;
+    }
+    if(state.tool === 'pen' || state.tool === 'highlighter'){
+      drawing = true;
+      lastPt = pt;
+      setStrokeStyle(state.tool==='highlighter');
+      ctx.beginPath();
+      ctx.moveTo(pt.x, pt.y);
+      ctx.lineTo(pt.x+0.01, pt.y+0.01);
+      ctx.stroke();
+      return;
+    }
+    if(state.tool === 'eraser'){
+      drawing = true;
+      lastPt = pt;
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.lineJoin='round'; ctx.lineCap='round';
+      ctx.lineWidth = Math.max(state.size*2.2, 18);
+      ctx.globalAlpha = 1;
+      ctx.beginPath();
+      ctx.moveTo(pt.x, pt.y);
+      ctx.lineTo(pt.x+0.01, pt.y+0.01);
+      ctx.stroke();
+      return;
+    }
+  });
+
+  viewport.addEventListener('pointermove', function(e){
+    if(e.pointerId !== activePointerId) return;
+    if(panning){
+      state.pan.x = panOrigin.x + (e.clientX - panStart.x);
+      state.pan.y = panOrigin.y + (e.clientY - panStart.y);
+      clampPan();
+      applyTransform();
+      return;
+    }
+    if(!drawing) return;
+    var pt = screenToBoard(e.clientX, e.clientY);
+
+    if(state.tool === 'shape' && startPt){
+      drawShapePreview(state.shape, startPt, pt, state.color, state.size);
+      return;
+    }
+    if((state.tool==='pen' || state.tool==='highlighter') && lastPt){
+      ctx.beginPath();
+      ctx.moveTo(lastPt.x, lastPt.y);
+      ctx.lineTo(pt.x, pt.y);
+      ctx.stroke();
+      lastPt = pt;
+      return;
+    }
+    if(state.tool==='eraser' && lastPt){
+      ctx.beginPath();
+      ctx.moveTo(lastPt.x, lastPt.y);
+      ctx.lineTo(pt.x, pt.y);
+      ctx.stroke();
+      lastPt = pt;
+      return;
+    }
+  });
+
+  function endStroke(e){
+    if(e.pointerId !== activePointerId) return;
+    activePointerId = null;
+    if(panning){
+      panning = false;
+      viewport.style.cursor = 'grab';
+      return;
+    }
+    if(state.tool === 'shape' && drawing && startPt){
+      var pt = screenToBoard(e.clientX, e.clientY);
+      commitShape(state.shape, startPt, pt, state.color, state.size);
+      drawing = false;
+      startPt = null;
+      pushHistory();
+      return;
+    }
+    if(drawing){
+      drawing = false;
+      lastPt = null;
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 1;
+      pushHistory();
+    }
+  }
+  viewport.addEventListener('pointerup', endStroke);
+  viewport.addEventListener('pointercancel', endStroke);
+  viewport.addEventListener('pointerleave', function(e){
+    if(panning || drawing) endStroke(e);
+  });
+
+  /* wheel = zoom (desktop convenience) */
+  viewport.addEventListener('wheel', function(e){
     e.preventDefault();
-    formMsg.classList.remove('show');
-    setFieldError(emailField, false);
-    setFieldError(passwordField, false);
+    var delta = e.deltaY > 0 ? -0.08 : 0.08;
+    setZoom(state.zoom + delta, e.clientX, e.clientY);
+  }, {passive:false});
 
-    const email = document.getElementById('email').value.trim();
-    const password = passwordInput.value;
-    const remember = document.getElementById('rememberMe').checked;
+  /* ---------- fullscreen ---------- */
+  var fsBtn = document.getElementById('btn-fullscreen');
+  var fsIcon = document.getElementById('fs-icon');
+  var EXPAND_PATH = 'M4 9V5.5A1.5 1.5 0 0 1 5.5 4H9M15 4h3.5A1.5 1.5 0 0 1 20 5.5V9M20 15v3.5a1.5 1.5 0 0 1-1.5 1.5H15M9 20H5.5A1.5 1.5 0 0 1 4 18.5V15';
+  var COLLAPSE_PATH = 'M9 4H5.5A1.5 1.5 0 0 0 4 5.5V9M15 4h3.5A1.5 1.5 0 0 1 20 5.5V9M20 15v3.5a1.5 1.5 0 0 1-1.5 1.5H15M9 20H5.5A1.5 1.5 0 0 1 4 18.5V15';
 
-    if (!email) {
-      setFieldError(emailField, true);
-      showMsg('من فضلك أدخل بريدك الإلكتروني', 'error');
-      document.getElementById('email').focus();
-      return;
-    }
-    if (!emailRegex.test(email)) {
-      setFieldError(emailField, true);
-      showMsg('صيغة البريد الإلكتروني غير صحيحة', 'error');
-      document.getElementById('email').focus();
-      return;
-    }
-    if (!password) {
-      setFieldError(passwordField, true);
-      showMsg('كلمة المرور مطلوبة', 'error');
-      passwordInput.focus();
-      return;
-    }
-
-    setBtnLoading(loginBtn, null, true, 'جارٍ تسجيل الدخول...', 'تسجيل الدخول');
-
-    const persistence = remember
-      ? firebase.auth.Auth.Persistence.LOCAL
-      : firebase.auth.Auth.Persistence.SESSION;
-
-    auth.setPersistence(persistence)
-      .then(function () { return auth.signInWithEmailAndPassword(email, password); })
-      .then(function (cred) {
-        // ✅ إنشاء sessionId جديد
-        const sessionId = cred.user.uid + '_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-        localStorage.setItem('awab_session_id', sessionId);
-
-        // ✅ تسجيل الجلسة الجديدة في Firebase — بما إن sessions/{uid} فيها
-        // جلسة واحدة بس، الكتابة هنا بتلغي أي جلسة سابقة تلقائيًا، والجهاز
-        // القديم هيكتشف ده لحظيًا (watchSessionKick) وهيتسجل خروج فورًا
-        return db.ref('sessions/' + cred.user.uid).set({
-          sessionId: sessionId,
-          device: navigator.userAgent || 'unknown',
-          lastActive: firebase.database.ServerValue.TIMESTAMP,
-          createdAt: firebase.database.ServerValue.TIMESTAMP
-        }).then(function () {
-          return db.ref('users/' + cred.user.uid).once('value').then(function (snap) {
-            const data = snap.val();
-            if (data && data.blocked === true) {
-              return auth.signOut().then(function () { return Promise.reject({ code: 'awab/blocked' }); });
-            }
-            const updates = { lastLoginAt: firebase.database.ServerValue.TIMESTAMP };
-            db.ref('users/' + cred.user.uid).update(updates);
-            if (remember) { localStorage.setItem('awab_last_email', email); }
-            else { localStorage.removeItem('awab_last_email'); }
-            window.location.href = 'home.html';
-          });
-        });
-      })
-      .catch(function (err) {
-        if (err.code === 'awab/blocked') {
-          showMsg('تم وقف حسابك من قبل إدارة المنصة. تواصل مع الدعم الفني لمزيد من التفاصيل.', 'error');
+  function currentFsElement(){
+    return document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement || null;
+  }
+  function fsIsSupported(){
+    return !!(document.fullscreenEnabled || document.webkitFullscreenEnabled || document.msFullscreenEnabled ||
+      document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen || document.documentElement.msRequestFullscreen);
+  }
+  function callSafely(fn, ctxObj){
+    return new Promise(function(resolve, reject){
+      try{
+        var result = fn.call(ctxObj);
+        if(result && typeof result.then === 'function'){
+          result.then(resolve, reject);
         } else {
-          showMsg(mapError(err.code), 'error');
-          if (err.code === 'auth/invalid-email' || err.code === 'auth/user-not-found') {
-            setFieldError(emailField, true);
-          } else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-            setFieldError(passwordField, true);
-          }
+          resolve();
         }
-        setBtnLoading(loginBtn, null, false, '', 'تسجيل الدخول');
-      });
-  });
-
-  /* ---------------- نافذة نسيت كلمة المرور ---------------- */
-  const forgotModal = document.getElementById('forgotModal');
-  const forgotStepConfirm = document.getElementById('forgotStepConfirm');
-  const forgotStepDone = document.getElementById('forgotStepDone');
-  const forgotEmailInput = document.getElementById('forgotEmail');
-  const forgotMsg = document.getElementById('forgotMsg');
-
-  function resetForgotModal() {
-    forgotStepConfirm.style.display = 'block';
-    forgotStepDone.style.display = 'none';
-    forgotMsg.classList.remove('show');
-    const confirmBtn = document.getElementById('confirmSendBtn');
-    confirmBtn.disabled = false;
-    confirmBtn.textContent = 'نعم، أرسل الرسالة';
+      } catch(err){
+        reject(err);
+      }
+    });
+  }
+  function requestFs(){
+    var el = document.documentElement;
+    var method = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+    if(!method) return Promise.reject(new Error('unsupported'));
+    return callSafely(method, el);
+  }
+  function exitFs(){
+    var method = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+    if(!method) return Promise.reject(new Error('unsupported'));
+    return callSafely(method, document);
   }
 
-  forgotEmailInput.addEventListener('focus', function () {
-    setTimeout(function () {
-      forgotEmailInput.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    }, 300);
-  });
+  var pseudoFs = false;
+  function setPseudoFs(on){
+    pseudoFs = on;
+    document.body.classList.toggle('pseudo-fs', on);
+    updateFsIcon();
+  }
+  function updateFsIcon(){
+    var isFs = !!currentFsElement() || pseudoFs;
+    fsIcon.querySelector('path').setAttribute('d', isFs ? COLLAPSE_PATH : EXPAND_PATH);
+    fsBtn.title = isFs ? 'إنهاء ملء الشاشة' : 'ملء الشاشة';
+  }
 
-  document.getElementById('openForgotBtn').addEventListener('click', function (e) {
-    e.preventDefault();
-    forgotEmailInput.value = document.getElementById('email').value.trim();
-    resetForgotModal();
-    forgotModal.classList.add('open');
-  });
-
-  function closeForgotModal() { forgotModal.classList.remove('open'); }
-  document.getElementById('closeForgotModal').addEventListener('click', closeForgotModal);
-  document.getElementById('cancelForgotBtn').addEventListener('click', closeForgotModal);
-  document.getElementById('closeDoneBtn').addEventListener('click', closeForgotModal);
-  forgotModal.addEventListener('click', function (e) { if (e.target === forgotModal) closeForgotModal(); });
-
-  document.getElementById('confirmSendBtn').addEventListener('click', function () {
-    const email = forgotEmailInput.value.trim();
-    if (!email) {
-      forgotMsg.textContent = 'من فضلك أدخل بريدك الإلكتروني';
-      forgotMsg.className = 'form-msg show error';
-      forgotEmailInput.focus();
+  fsBtn.addEventListener('click', function(){
+    if(currentFsElement() || pseudoFs){
+      exitFs().catch(function(){});
+      setPseudoFs(false);
       return;
     }
-    if (!emailRegex.test(email)) {
-      forgotMsg.textContent = 'صيغة البريد الإلكتروني غير صحيحة';
-      forgotMsg.className = 'form-msg show error';
-      forgotEmailInput.focus();
+    if(!fsIsSupported()){
+      setPseudoFs(true);
+      showToast('ملء الشاشة الكامل غير متاح هنا، فُعِّل عرض موسّع بدلاً منه');
       return;
     }
+    requestFs().then(function(){
+      updateFsIcon();
+    }).catch(function(){
+      setPseudoFs(true);
+      showToast('افتح رابط اللوحة في تبويب مستقل لتفعيل ملء الشاشة الكامل، وتم تفعيل عرض موسّع الآن');
+    });
+  });
+  document.addEventListener('fullscreenchange', updateFsIcon);
+  document.addEventListener('webkitfullscreenchange', updateFsIcon);
+  document.addEventListener('msfullscreenchange', updateFsIcon);
 
-    const btn = this;
-    setBtnLoading(btn, null, true, 'جارٍ الإرسال...', 'نعم، أرسل الرسالة');
-
-    auth.sendPasswordResetEmail(email, {
-      url: RESET_SITE_URL
-    })
-      .then(function () {
-        forgotStepConfirm.style.display = 'none';
-        forgotStepDone.style.display = 'block';
-      })
-      .catch(function (err) {
-        const map = {
-          'auth/invalid-email': 'صيغة البريد الإلكتروني غير صحيحة',
-          'auth/user-not-found': 'لا يوجد حساب مسجل بهذا البريد الإلكتروني',
-          'auth/too-many-requests': 'محاولات كثيرة، حاول مرة أخرى بعد قليل'
-        };
-        forgotMsg.textContent = map[err.code] || ('تعذر إرسال الرسالة (' + (err.code || 'خطأ غير معروف') + ')');
-        forgotMsg.className = 'form-msg show error';
-        setBtnLoading(btn, null, false, '', 'نعم، أرسل الرسالة');
+  /* ---------- save as image ---------- */
+  document.getElementById('btn-save').addEventListener('click', function(){
+    var out = document.createElement('canvas');
+    out.width = BOARD_W; out.height = BOARD_H;
+    var octx = out.getContext('2d');
+    var isDark = viewport.classList.contains('bg-dark');
+    var isSlate = viewport.classList.contains('bg-slate');
+    octx.fillStyle = isDark ? '#14161A' : (isSlate ? '#0E2A2E' : '#FBFAF6');
+    octx.fillRect(0,0,BOARD_W,BOARD_H);
+    octx.drawImage(canvas, 0, 0);
+    textLayer.querySelectorAll('.board-text').forEach(function(el){
+      var left = parseFloat(el.style.left)||0;
+      var top = parseFloat(el.style.top)||0;
+      var fontSize = parseFloat(el.style.fontSize)||18;
+      octx.fillStyle = el.style.color || '#1F2933';
+      octx.font = fontSize+'px Cairo, sans-serif';
+      octx.textBaseline = 'top';
+      octx.direction = 'rtl';
+      var lines = el.textContent.split('\n');
+      lines.forEach(function(line, i){
+        octx.fillText(line, left + (el.offsetWidth||0), top + i*fontSize*1.35, el.offsetWidth ? el.offsetWidth*4 : 2000);
       });
+    });
+    var link = document.createElement('a');
+    link.download = 'whiteboard-'+Date.now()+'.png';
+    link.href = out.toDataURL('image/png');
+    link.click();
+    showToast('تم حفظ الصورة');
   });
+
+  /* ---------- init ---------- */
+  requestAnimationFrame(function(){
+    centerInit();
+  });
+})();
 </script>
 </body>
 </html>
