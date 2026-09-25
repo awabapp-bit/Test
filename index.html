@@ -126,6 +126,7 @@
     padding:12px 14px; box-shadow:0 10px 30px rgba(0,0,0,0.28);
     display:flex; flex-direction:column; gap:9px; z-index:45;
   }
+  #context-bar.show{opacity:1; pointer-events:auto;}
   #context-bar.cb-bottom{left:50%;bottom:16px;transform:translateX(-50%) translateY(14px);max-width:min(92vw,520px);}
   #context-bar.cb-bottom.show{transform:translateX(-50%) translateY(0);}
   #context-bar.cb-top{left:50%;top:16px;transform:translateX(-50%) translateY(-14px);max-width:min(92vw,520px);}
@@ -491,20 +492,14 @@
   function renderContextBar(){
     contextBar.innerHTML = '';
     var tool = state.tool;
-    var titles = { pen:'إعدادات القلم', highlighter:'إعدادات الماركر', eraser:'إعدادات الممحاة', text:'إعدادات الكتابة', shape:'إعدادات الأشكال', move:'التحريك والتكبير' };
-    if(titles[tool]){
-      var t = el('div',{class:'ctx-title'}); t.textContent = titles[tool]; contextBar.appendChild(t);
-    }
+    contextBar.classList.add('show');
 
     if(tool === 'pen'){
       contextBar.appendChild(colorAndSizeRow(tools.pen, 1, 30, 'px'));
-      contextBar.classList.add('show');
     } else if(tool === 'highlighter'){
       contextBar.appendChild(colorAndSizeRow(tools.highlighter, 8, 45, 'px'));
-      contextBar.classList.add('show');
     } else if(tool === 'eraser'){
       contextBar.appendChild(sizeOnlyRow('حجم الممحاة', 10, 90, tools.eraser, 'size', 'px'));
-      contextBar.classList.add('show');
     } else if(tool === 'text'){
       contextBar.appendChild(colorAndSizeRow(tools.text, 14, 96, 'px'));
       var boldRow = el('div',{class:'ctx-row'});
@@ -516,7 +511,6 @@
       });
       boldRow.appendChild(boldChip);
       contextBar.appendChild(boldRow);
-      contextBar.classList.add('show');
     } else if(tool === 'shape'){
       var shapeRow = el('div',{class:'ctx-row'});
       [['line','M4 20 20 4'],['arrow','M4 20 20 4M20 4h-7M20 4v7'],['rect',null],['ellipse',null]].forEach(function(pair){
@@ -535,7 +529,6 @@
       });
       contextBar.appendChild(shapeRow);
       contextBar.appendChild(colorAndSizeRow(tools.shape, 1, 30, 'px'));
-      contextBar.classList.add('show');
     } else if(tool === 'move'){
       var zr = el('div',{class:'ctx-row'});
       var zOut = el('button',{class:'mini-zoom-btn'}); zOut.innerHTML = '<svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg>';
@@ -549,14 +542,13 @@
       contextBar.appendChild(zr);
       var hint = el('div',{class:'ctx-hint'}); hint.textContent = 'اسحب بإصبع للتحريك، أو إصبعين للتكبير والتصغير';
       contextBar.appendChild(hint);
-      contextBar.classList.add('show');
-    } else {
-      contextBar.classList.remove('show');
     }
   }
 
   var toolButtons = document.querySelectorAll('.tool-btn[data-tool]');
+  var lastDrawTool = 'pen';
   function setTool(tool){
+    if(tool !== 'move'){ lastDrawTool = tool; }
     state.tool = tool;
     toolButtons.forEach(function(b){ b.classList.toggle('active', b.dataset.tool===tool); });
     viewport.style.cursor = tool==='move' ? 'grab' : (tool==='text' ? 'text' : 'crosshair');
@@ -694,7 +686,14 @@
     var pos = {x:e.clientX, y:e.clientY};
     if(isTap){
       if(lastTapTime && (now-lastTapTime)<350 && lastTapPos && distanceOf(pos,lastTapPos)<40){
-        if(state.tool !== 'move'){ setTool('move'); showToast('تم التحويل لوضع التحريك'); }
+        if(state.tool === 'move'){
+          setTool(lastDrawTool);
+          var toolLabels = {pen:'القلم', highlighter:'الماركر', eraser:'الممحاة', text:'النص', shape:'الأشكال'};
+          showToast('تم التحويل لوضع '+(toolLabels[lastDrawTool]||'الرسم'));
+        } else {
+          setTool('move');
+          showToast('تم التحويل لوضع التحريك');
+        }
         lastTapTime = 0; lastTapPos = null;
       } else {
         lastTapTime = now; lastTapPos = pos;
@@ -765,6 +764,7 @@
 
   var activePointers = new Map();
   var pinch = null;
+  var pinchActive = false;
 
   function distanceOf(a, b){ return Math.hypot(a.x-b.x, a.y-b.y); }
   function midpointOf(a, b){ return {x:(a.x+b.x)/2, y:(a.y+b.y)/2}; }
@@ -788,6 +788,8 @@
       cancelSingleGesture();
       var pts = Array.from(activePointers.values());
       pinch = { startDist: distanceOf(pts[0],pts[1]), startZoom: state.zoom, startMid: midpointOf(pts[0],pts[1]), startPan: {x:state.pan.x, y:state.pan.y} };
+      pinchActive = true;
+      lastTapTime = 0; lastTapPos = null;
       return;
     }
     if(activePointers.size > 2) return;
@@ -867,8 +869,12 @@
     if(!activePointers.has(e.pointerId)) return;
     activePointers.delete(e.pointerId);
 
-    if(pinch){
-      if(activePointers.size < 2){ pinch = null; }
+    if(pinchActive){
+      pinch = null;
+      if(activePointers.size === 0){
+        pinchActive = false;
+        lastTapTime = 0; lastTapPos = null;
+      }
       return;
     }
 
