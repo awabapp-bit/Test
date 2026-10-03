@@ -82,6 +82,8 @@ body[data-d=bottom] #pop{bottom:calc(84px + env(safe-area-inset-bottom,0px));top
 body[data-d=right] #pages{padding:0 86px 0 24px}body[data-d=left] #pages{padding:0 24px 0 86px}
 body[data-d=top] #stage{padding-top:100px}body[data-d=bottom] #stage{padding-bottom:110px}
 @media(max-width:560px){body[data-d=top] .side,body[data-d=bottom] .side{max-width:calc(100vw - 12px);overflow-x:auto}}
+#stage,.ov,body.draw .ov{touch-action:none}
+#pages{transform-origin:0 0}
 </style></head><body class="t-pen draw">
 <div id="bar">
  <div class="brand"><div class="logo"><svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"/><path d="M14 3v5h5M9 15l1.5-1.5 4-4 1.5 1.5-4 4z"/></svg></div><div>PDF Studio<small>عارض ومحرر احترافي</small></div></div>
@@ -94,7 +96,7 @@ body[data-d=top] #stage{padding-top:100px}body[data-d=bottom] #stage{padding-bot
  <button id="add" style="display:none"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>صفحة</button><select id="bgs" style="display:none"><option value="white">أبيض</option><option value="grid">شبكة</option><option value="green">سبورة خضراء</option></select>
 </div>
  <div class="sp"></div>
- <button id="dk" title="تغيير مكان شريط الأدوات"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/></svg></button><button id="th" title="الوضع الداكن"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 010 18z" fill="currentColor"/></svg></button><button class="p" id="save"><svg viewBox="0 0 24 24"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>حفظ PDF</button>
+ <button id="fs" title="ملء الشاشة (F)"><svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 00-2 2v3M21 8V5a2 2 0 00-2-2h-3M3 16v3a2 2 0 002 2h3M16 21h3a2 2 0 002-2v-3"/></svg></button><button id="dk" title="تغيير مكان شريط الأدوات"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/></svg></button><button id="th" title="الوضع الداكن"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 010 18z" fill="currentColor"/></svg></button><button class="p" id="save"><svg viewBox="0 0 24 24"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>حفظ PDF</button>
 </div>
 <div class="side">
  <button id="board" title="سبورة"><svg viewBox="0 0 24 24"><path d="M2 3h20"/><path d="M21 3v11a2 2 0 01-2 2H5a2 2 0 01-2-2V3"/><path d="m7 21 5-5 5 5"/></svg></button><div class="hr"></div>
@@ -138,20 +140,21 @@ function syncUI(){$('#sz').value=size;$('#szv').textContent=size;pensEl.querySel
 document.querySelectorAll('#tools button').forEach(b=>b.onclick=()=>setTool(b.dataset.t));
 $('#sz').oninput=e=>{size=+e.target.value;$('#szv').textContent=size};
 // rendering
-const dpr=Math.min(window.devicePixelRatio||1,2);
+const dpr=Math.max(window.devicePixelRatio||1,2);
+const RK=p=>Math.min(scale*dpr,8192/Math.max(p.w,p.h),Math.sqrt(4e7/(p.w*p.h)));
 const obs=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)renderPage(e.target)}),{root:stage,rootMargin:'600px 0px'});
 function bgStyle(el){const d=D.board;el.classList.remove('green');el.style.background='';if(mode!=='board')return;if(d.bg==='green')el.classList.add('green');else if(d.bg==='grid'){el.style.background='#fff';el.style.backgroundImage='linear-gradient(#cfd8e3 1px,transparent 1px),linear-gradient(90deg,#cfd8e3 1px,transparent 1px)';el.style.backgroundSize=(24*scale)+'px '+(24*scale)+'px'}}
 function build(){const d=D[mode];pagesEl.innerHTML='';obs.disconnect();d.pages.forEach((p,i)=>{const el=document.createElement('div');el.className='pgx';el.style.width=p.w*scale+'px';el.style.height=p.h*scale+'px';bgStyle(el);pagesEl.append(el);obs.observe(el)});$('#pc').textContent='/ '+d.pages.length;$('#zv').textContent=Math.round(scale*100)+'%';updBtns()}
-async function renderPage(el){if(el._r)return;el._r=1;const i=[...pagesEl.children].indexOf(el),d=D[mode],p=d.pages[i],k=scale*dpr;
+async function renderPage(el){if(el._r)return;el._r=1;const i=[...pagesEl.children].indexOf(el),d=D[mode],p=d.pages[i],k=RK(p);
  if(mode==='pdf'){const b=document.createElement('canvas');b.width=p.w*k;b.height=p.h*k;el.append(b);const pg=await d.doc.getPage(i+1);await pg.render({canvasContext:b.getContext('2d'),viewport:pg.getViewport({scale:k})}).promise}
  const o=document.createElement('canvas');o.className='ov';o.width=p.w*k;o.height=p.h*k;el.append(o);draw(i)}
 function strokePath(c,s){c.save();c.lineJoin='round';c.lineCap=s.t==='hl'?'butt':'round';c.strokeStyle=c.fillStyle=s.c;c.globalAlpha=s.a;c.lineWidth=s.w;const P=s.pts;
  if(P.length<2){c.beginPath();c.arc(P[0][0],P[0][1],s.w/2,0,7);c.fill()}else{c.beginPath();c.moveTo(P[0][0],P[0][1]);for(let j=1;j<P.length-1;j++){c.quadraticCurveTo(P[j][0],P[j][1],(P[j][0]+P[j+1][0])/2,(P[j][1]+P[j+1][1])/2)}c.lineTo(P[P.length-1][0],P[P.length-1][1]);c.stroke()}c.restore()}
-function draw(i){const el=pagesEl.children[i],o=el&&el.querySelector('.ov');if(!o)return;const c=o.getContext('2d'),k=scale*dpr;c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,o.width,o.height);c.setTransform(k,0,0,k,0,0);D[mode].strokes[i].forEach(s=>strokePath(c,s))}
+function draw(i){const el=pagesEl.children[i],o=el&&el.querySelector('.ov');if(!o)return;const c=o.getContext('2d'),k=o.width/D[mode].pages[i].w;c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,o.width,o.height);c.setTransform(k,0,0,k,0,0);D[mode].strokes[i].forEach(s=>strokePath(c,s))}
 function setScale(v){scale=Math.max(.4,Math.min(4,v));if(mode)build()}
 $('#zi').onclick=()=>setScale(scale+.15);$('#zo').onclick=()=>setScale(scale-.15);
 $('#fit').onclick=()=>{if(mode)setScale((stage.clientWidth-40)/D[mode].pages[0].w)};
-stage.addEventListener('wheel',e=>{if(e.ctrlKey&&mode){e.preventDefault();setScale(scale*(e.deltaY<0?1.08:.93))}},{passive:false});
+stage.addEventListener('wheel',e=>{if(e.ctrlKey&&mode){e.preventDefault();const an=anchor(e.clientX,e.clientY);setScale(scale*(e.deltaY<0?1.08:.93));fix(an,e.clientX,e.clientY)}},{passive:false});
 // drawing
 const dist2=(px,py,a,b)=>{let dx=b[0]-a[0],dy=b[1]-a[1],l=dx*dx+dy*dy,t=l?Math.max(0,Math.min(1,((px-a[0])*dx+(py-a[1])*dy)/l)):0,x=a[0]+t*dx-px,y=a[1]+t*dy-py;return x*x+y*y};
 function hit(s,x,y,r){r+=s.w/2;const P=s.pts;if(P.length<2)return dist2(x,y,P[0],P[0])<r*r;for(let j=0;j<P.length-1;j++)if(dist2(x,y,P[j],P[j+1])<r*r)return true;return false}
@@ -192,7 +195,7 @@ async function loadFile(f){if(!/pdf$/i.test(f.type)&&!/\.pdf$/i.test(f.name))ret
 ['dragleave','drop'].forEach(t=>window.addEventListener(t,e=>{e.preventDefault();if(t==='drop'||e.target===document.documentElement)$('#drop').style.display='none'}));
 window.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];f&&loadFile(f)});
 // export
-function layer(i,withBg){const d=D[mode],p=d.pages[i],k=2,c=document.createElement('canvas');c.width=p.w*k;c.height=p.h*k;const x=c.getContext('2d');
+function layer(i,withBg){const d=D[mode],p=d.pages[i],k=3,c=document.createElement('canvas');c.width=p.w*k;c.height=p.h*k;const x=c.getContext('2d');
  if(withBg){const g=d.bg;x.fillStyle=g==='green'?'#1f3b33':'#fff';x.fillRect(0,0,c.width,c.height);if(g==='grid'){x.strokeStyle='#cfd8e3';x.lineWidth=1;for(let a=0;a<p.w;a+=24){x.beginPath();x.moveTo(a*k,0);x.lineTo(a*k,c.height);x.stroke()}for(let b=0;b<p.h;b+=24){x.beginPath();x.moveTo(0,b*k);x.lineTo(c.width,b*k);x.stroke()}}}
  x.scale(k,k);d.strokes[i].forEach(s=>strokePath(x,s));return c.toDataURL('image/png')}
 $('#save').onclick=async()=>{if(!mode)return toast('افتح ملف أو السبورة الأول');const d=D[mode];toast('جاري تجهيز الملف…');
@@ -205,11 +208,35 @@ $('#save').onclick=async()=>{if(!mode)return toast('افتح ملف أو الس�
 // shortcuts + theme
 document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const k=e.key.toLowerCase();
  if((e.ctrlKey||e.metaKey)&&k==='z'){e.preventDefault();e.shiftKey?redo():undo()}else if((e.ctrlKey||e.metaKey)&&k==='y'){e.preventDefault();redo()}
- else if(!e.ctrlKey&&!e.metaKey){({p:'pen',h:'hl',e:'er',v:'hand'})[k]&&setTool(({p:'pen',h:'hl',e:'er',v:'hand'})[k]);if(k==='+'||k==='=')setScale(scale+.15);if(k==='-')setScale(scale-.15)}});
+ else if(!e.ctrlKey&&!e.metaKey){({p:'pen',h:'hl',e:'er',v:'hand'})[k]&&setTool(({p:'pen',h:'hl',e:'er',v:'hand'})[k]);if(k==='f')toggleFS();if(k==='+'||k==='=')setScale(scale+.15);if(k==='-')setScale(scale-.15)}});
 $('#th').onclick=()=>{const r=document.documentElement,dk=r.dataset.theme==='dark'||(r.dataset.theme!=='light'&&matchMedia('(prefers-color-scheme:dark)').matches);r.dataset.theme=dk?'light':'dark'};
 const pop=$('#pop');let pt;
 function showPop(t){clearTimeout(pt);if(t!=='pen'&&t!=='hl'){pop.classList.remove('s');return}pop.classList.add('s');pt=setTimeout(()=>pop.classList.remove('s'),3000)}
 ['pointerdown','input','click'].forEach(ev=>pop.addEventListener(ev,()=>showPop(tool)));
+// pinch-zoom (two fingers) + pan, works with any tool
+function anchor(fx,fy){let b=0,bd=1e9,rr;[...pagesEl.children].forEach((el,i)=>{const r=el.getBoundingClientRect(),d=fy<r.top?r.top-fy:fy>r.bottom?fy-r.bottom:0;if(d<bd){bd=d;b=i;rr=r}});return rr?{i:b,x:(fx-rr.left)/rr.width,y:(fy-rr.top)/rr.height}:null}
+function fix(an,x,y){if(!an)return;const el=pagesEl.children[an.i];if(!el)return;const r=el.getBoundingClientRect();stage.scrollLeft+=r.left+an.x*r.width-x;stage.scrollTop+=r.top+an.y*r.height-y}
+const tp=new Map(),dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);let pz=null,hp=null;
+function cancelCur(){if(!cur)return;const d=D[mode];if(cur.s){rm(cur.i,cur.s);draw(cur.i)}else{cur.del.slice().reverse().forEach(x=>{d.strokes[x.i].splice(x.idx,0,x.s);draw(x.i)})}cur=null}
+function commit(){const z=pz;pz=null;pagesEl.style.transform=pagesEl.style.transformOrigin='';const ns=Math.max(.4,Math.min(4,z.s0*z.r));if(Math.abs(ns-scale)>.001)setScale(ns);fix(z.an,z.mx,z.my)}
+stage.addEventListener('pointerdown',e=>{if(!mode)return;
+ if(e.pointerType==='touch'){tp.set(e.pointerId,[e.clientX,e.clientY]);
+  if(tp.size===2){cancelCur();hp=null;const [a,b]=[...tp.values()],mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2,pr=pagesEl.getBoundingClientRect();
+   pz={d0:dist(a,b)||1,mx0:mx,my0:my,mx,my,r:1,s0:scale,an:anchor(mx,my)};pagesEl.style.transformOrigin=(mx-pr.left)+'px '+(my-pr.top)+'px';e.stopPropagation();return}
+  if(tp.size>2){e.stopPropagation();return}}
+ if(tool==='hand'&&!pz&&!e.target.closest('#bar')){hp={x:e.clientX,y:e.clientY,sl:stage.scrollLeft,st:stage.scrollTop,id:e.pointerId};try{stage.setPointerCapture(e.pointerId)}catch(_){}}
+},true);
+stage.addEventListener('pointermove',e=>{
+ if(tp.has(e.pointerId)){tp.set(e.pointerId,[e.clientX,e.clientY]);
+  if(pz){e.stopPropagation();e.preventDefault();if(tp.size>=2){const [a,b]=[...tp.values()],mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2;let r=dist(a,b)/pz.d0;r=Math.max(.4/pz.s0,Math.min(4/pz.s0,r));pz.r=r;pz.mx=mx;pz.my=my;pagesEl.style.transform='translate('+(mx-pz.mx0)+'px,'+(my-pz.my0)+'px) scale('+r+')'}return}}
+ if(hp&&e.pointerId===hp.id){stage.scrollLeft=hp.sl-(e.clientX-hp.x);stage.scrollTop=hp.st-(e.clientY-hp.y)}
+},true);
+const pend=e=>{if(hp&&e.pointerId===hp.id)hp=null;if(!tp.delete(e.pointerId))return;if(pz&&tp.size<2)commit()};
+stage.addEventListener('pointerup',pend,true);stage.addEventListener('pointercancel',pend,true);
+const FI={on:'<path d="M8 3H5a2 2 0 00-2 2v3M21 8V5a2 2 0 00-2-2h-3M3 16v3a2 2 0 002 2h3M16 21h3a2 2 0 002-2v-3"/>',off:'<path d="M8 3v3a2 2 0 01-2 2H3M21 8h-3a2 2 0 01-2-2V3M3 16h3a2 2 0 012 2v3M16 21v-3a2 2 0 012-2h3"/>'};
+function toggleFS(){const r=document.documentElement;if(document.fullscreenElement)document.exitFullscreen();else if(r.requestFullscreen)r.requestFullscreen().catch(()=>toast('المتصفح منع ملء الشاشة هنا — افتح الصفحة في تبويب مستقل'));else toast('ملء الشاشة غير مدعوم في هذا المتصفح')}
+$('#fs').onclick=toggleFS;
+document.addEventListener('fullscreenchange',()=>{$('#fs').querySelector('svg').innerHTML=document.fullscreenElement?FI.off:FI.on});
 const POS=['right','bottom','left','top'],PN={right:'يمين',left:'يسار',top:'أعلى',bottom:'أسفل'};let dpos='right';try{dpos=localStorage.getItem('dk')||'right'}catch(e){}
 function setDock(p,t){dpos=p;document.body.dataset.d=p;try{localStorage.setItem('dk',p)}catch(e){}if(t)toast('شريط الأدوات: '+PN[p])}
 $('#dk').onclick=()=>setDock(POS[(POS.indexOf(dpos)+1)%4],1);setDock(POS.includes(dpos)?dpos:'right');
