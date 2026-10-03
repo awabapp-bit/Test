@@ -84,6 +84,7 @@ body[data-d=top] #stage{padding-top:100px}body[data-d=bottom] #stage{padding-bot
 @media(max-width:560px){body[data-d=top] .side,body[data-d=bottom] .side{max-width:calc(100vw - 12px);overflow-x:auto}}
 #stage,.ov,body.draw .ov{touch-action:none}
 #pages{transform-origin:0 0}
+#stage{overscroll-behavior:contain}
 </style></head><body class="t-pen draw">
 <div id="bar">
  <div class="brand"><div class="logo"><svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"/><path d="M14 3v5h5M9 15l1.5-1.5 4-4 1.5 1.5-4 4z"/></svg></div><div>PDF Studio<small>عارض ومحرر احترافي</small></div></div>
@@ -160,9 +161,9 @@ const dist2=(px,py,a,b)=>{let dx=b[0]-a[0],dy=b[1]-a[1],l=dx*dx+dy*dy,t=l?Math.m
 function hit(s,x,y,r){r+=s.w/2;const P=s.pts;if(P.length<2)return dist2(x,y,P[0],P[0])<r*r;for(let j=0;j<P.length-1;j++)if(dist2(x,y,P[j],P[j+1])<r*r)return true;return false}
 function erase(x,y){const d=D[mode],i=cur.i,L=d.strokes[i];for(let j=L.length-1;j>=0;j--)if(hit(L[j],x,y,9/scale*1.4+size/3)){cur.del.push({i,s:L[j],idx:j});L.splice(j,1);cur.dirty=1}if(cur.dirty){draw(i)}}
 pagesEl.addEventListener('pointerdown',e=>{if(!e.target.classList.contains('ov')||tool==='hand'||e.button>0)return;e.preventDefault();const o=e.target,i=[...pagesEl.children].indexOf(o.parentNode),d=D[mode],r=o.getBoundingClientRect();o.setPointerCapture(e.pointerId);
- const x=(e.clientX-r.left)/scale,y=(e.clientY-r.top)/scale;cur={i,o,r,del:[],s:null};
+ const x=(e.clientX-r.left)/scale,y=(e.clientY-r.top)/scale;cur={i,o,r,del:[],s:null,touch:e.pointerType==='touch'&&tool!=='er',t0:performance.now(),cx:e.clientX,cy:e.clientY,px:e.clientX,py:e.clientY,path:0};
  if(tool==='er'){erase(x,y)}else{const hl=tool==='hl',w=hl?size:size*(e.pointerType==='pen'&&e.pressure?.4+e.pressure:1);cur.s={t:tool,c:hl?hlColor:color,a:hl?.38:PENS[pen][2],w,pts:[[x,y]]};d.strokes[i].push(cur.s);draw(i)}});
-pagesEl.addEventListener('pointermove',e=>{if(!cur||cur.o!==e.target)return;const x=(e.clientX-cur.r.left)/scale,y=(e.clientY-cur.r.top)/scale;
+pagesEl.addEventListener('pointermove',e=>{if(!cur||cur.o!==e.target)return;if(cur.touch&&checkSwipe(e))return;const x=(e.clientX-cur.r.left)/scale,y=(e.clientY-cur.r.top)/scale;
  if(tool==='er'){erase(x,y);return}const P=cur.s.pts,l=P[P.length-1];if(Math.hypot(x-l[0],y-l[1])<.6)return;P.push([x,y]);if(!cur.raf)cur.raf=requestAnimationFrame(()=>{cur&&(cur.raf=0,draw(cur.i))})});
 const up=()=>{if(!cur)return;const d=D[mode];if(cur.s){d.hist.push({k:'a',i:cur.i,s:cur.s});d.redo=[];draw(cur.i)}else if(cur.del.length){d.hist.push({k:'d',list:cur.del});d.redo=[]}cur=null;updBtns()};
 pagesEl.addEventListener('pointerup',up);pagesEl.addEventListener('pointercancel',up);
@@ -176,7 +177,7 @@ $('#clr').onclick=()=>{if(!mode)return;const d=D[mode],list=[];d.strokes.forEach
 // pages nav
 function curPage(){const c=stage.getBoundingClientRect(),m=c.top+c.height/3;let n=0;[...pagesEl.children].forEach((el,i)=>{if(el.getBoundingClientRect().top<=m)n=i});return n}
 stage.addEventListener('scroll',()=>{if(mode&&document.activeElement!==$('#pg'))$('#pg').value=curPage()+1});
-const go=n=>{const el=pagesEl.children[Math.max(0,Math.min(D[mode].pages.length-1,n))];if(el)el.scrollIntoView({block:'start'});$('#pg').value=curPage()+1};
+const go=n=>{const el=pagesEl.children[Math.max(0,Math.min(D[mode].pages.length-1,n))];if(el)el.scrollIntoView({block:'start',behavior:'smooth'});$('#pg').value=curPage()+1};
 $('#pg').onchange=e=>mode&&go((+e.target.value||1)-1);$('#next').onclick=()=>mode&&go(curPage()+1);$('#prev').onclick=()=>mode&&go(curPage()-1);
 // modes
 function show(m){mode=m;$('#empty').style.display='none';$('#board').style.display=m==='board'?'none':'';$('#back').style.display=m==='board'&&D.pdf.doc?'':'none';$('#add').style.display=$('#bgs').style.display=m==='board'?'':'none';build();stage.scrollTop=0;$('#pg').value=1;updBtns()}
@@ -217,6 +218,11 @@ function showPop(t){clearTimeout(pt);if(t!=='pen'&&t!=='hl'){pop.classList.remov
 function anchor(fx,fy){let b=0,bd=1e9,rr;[...pagesEl.children].forEach((el,i)=>{const r=el.getBoundingClientRect(),d=fy<r.top?r.top-fy:fy>r.bottom?fy-r.bottom:0;if(d<bd){bd=d;b=i;rr=r}});return rr?{i:b,x:(fx-rr.left)/rr.width,y:(fy-rr.top)/rr.height}:null}
 function fix(an,x,y){if(!an)return;const el=pagesEl.children[an.i];if(!el)return;const r=el.getBoundingClientRect();stage.scrollLeft+=r.left+an.x*r.width-x;stage.scrollTop+=r.top+an.y*r.height-y}
 const tp=new Map(),dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);let pz=null,hp=null;
+let mraf=0;
+function fling(vx,vy){cancelAnimationFrame(mraf);if(Math.hypot(vx,vy)<.08)return;let t0=performance.now();const step=t=>{const dt=Math.min(34,t-t0);t0=t;stage.scrollLeft+=vx*dt;stage.scrollTop+=vy*dt;const f=Math.pow(.945,dt/16);vx*=f;vy*=f;if(Math.hypot(vx,vy)>.025)mraf=requestAnimationFrame(step)};mraf=requestAnimationFrame(step)}
+function checkSwipe(e){const c=cur,dx=e.clientX-c.cx,dy=e.clientY-c.cy,D=Math.hypot(dx,dy),t=Math.max(1,performance.now()-c.t0);c.path+=Math.hypot(e.clientX-c.px,e.clientY-c.py);c.px=e.clientX;c.py=e.clientY;
+ if(c.path<D*1.15+4&&Math.abs(dy)>=2.5*Math.abs(dx)&&((t<420&&D>=40&&D/t>=.7)||D>=240))return autoPan(e,dx,dy);return false}
+function autoPan(e,dx,dy){const sl=stage.scrollLeft,st=stage.scrollTop,c=cur;cancelCur();setTool('hand',1);showPop('hand');toast('تحويل تلقائي لوضع التحريك — اختر القلم للرجوع');hp={x:c.cx,y:c.cy,sl,st,id:e.pointerId,vx:0,vy:0,lx:e.clientX,ly:e.clientY,lt:performance.now()};stage.scrollLeft=sl-dx;stage.scrollTop=st-dy;return true}
 function cancelCur(){if(!cur)return;const d=D[mode];if(cur.s){rm(cur.i,cur.s);draw(cur.i)}else{cur.del.slice().reverse().forEach(x=>{d.strokes[x.i].splice(x.idx,0,x.s);draw(x.i)})}cur=null}
 function commit(){const z=pz;pz=null;pagesEl.style.transform=pagesEl.style.transformOrigin='';const ns=Math.max(.4,Math.min(4,z.s0*z.r));if(Math.abs(ns-scale)>.001)setScale(ns);fix(z.an,z.mx,z.my)}
 stage.addEventListener('pointerdown',e=>{if(!mode)return;
@@ -224,14 +230,14 @@ stage.addEventListener('pointerdown',e=>{if(!mode)return;
   if(tp.size===2){cancelCur();hp=null;const [a,b]=[...tp.values()],mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2,pr=pagesEl.getBoundingClientRect();
    pz={d0:dist(a,b)||1,mx0:mx,my0:my,mx,my,r:1,s0:scale,an:anchor(mx,my)};pagesEl.style.transformOrigin=(mx-pr.left)+'px '+(my-pr.top)+'px';e.stopPropagation();return}
   if(tp.size>2){e.stopPropagation();return}}
- if(tool==='hand'&&!pz&&!e.target.closest('#bar')){hp={x:e.clientX,y:e.clientY,sl:stage.scrollLeft,st:stage.scrollTop,id:e.pointerId};try{stage.setPointerCapture(e.pointerId)}catch(_){}}
+ if(tool==='hand'&&!pz&&!e.target.closest('#bar')){cancelAnimationFrame(mraf);hp={x:e.clientX,y:e.clientY,sl:stage.scrollLeft,st:stage.scrollTop,id:e.pointerId,vx:0,vy:0,lx:e.clientX,ly:e.clientY,lt:performance.now()};try{stage.setPointerCapture(e.pointerId)}catch(_){}}
 },true);
 stage.addEventListener('pointermove',e=>{
  if(tp.has(e.pointerId)){tp.set(e.pointerId,[e.clientX,e.clientY]);
   if(pz){e.stopPropagation();e.preventDefault();if(tp.size>=2){const [a,b]=[...tp.values()],mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2;let r=dist(a,b)/pz.d0;r=Math.max(.4/pz.s0,Math.min(4/pz.s0,r));pz.r=r;pz.mx=mx;pz.my=my;pagesEl.style.transform='translate('+(mx-pz.mx0)+'px,'+(my-pz.my0)+'px) scale('+r+')'}return}}
- if(hp&&e.pointerId===hp.id){stage.scrollLeft=hp.sl-(e.clientX-hp.x);stage.scrollTop=hp.st-(e.clientY-hp.y)}
+ if(hp&&e.pointerId===hp.id){const n=performance.now(),dt=Math.max(1,n-hp.lt);hp.vx=.7*hp.vx+.3*((hp.lx-e.clientX)/dt);hp.vy=.7*hp.vy+.3*((hp.ly-e.clientY)/dt);hp.lx=e.clientX;hp.ly=e.clientY;hp.lt=n;stage.scrollLeft=hp.sl-(e.clientX-hp.x);stage.scrollTop=hp.st-(e.clientY-hp.y)}
 },true);
-const pend=e=>{if(hp&&e.pointerId===hp.id)hp=null;if(!tp.delete(e.pointerId))return;if(pz&&tp.size<2)commit()};
+const pend=e=>{if(hp&&e.pointerId===hp.id){const h=hp;hp=null;if(e.type==='pointerup'&&performance.now()-h.lt<90){const c=v=>Math.max(-4,Math.min(4,v));fling(c(h.vx),c(h.vy))}}if(!tp.delete(e.pointerId))return;if(pz&&tp.size<2)commit()};
 stage.addEventListener('pointerup',pend,true);stage.addEventListener('pointercancel',pend,true);
 const FI={on:'<path d="M8 3H5a2 2 0 00-2 2v3M21 8V5a2 2 0 00-2-2h-3M3 16v3a2 2 0 002 2h3M16 21h3a2 2 0 002-2v-3"/>',off:'<path d="M8 3v3a2 2 0 01-2 2H3M21 8h-3a2 2 0 01-2-2V3M3 16h3a2 2 0 012 2v3M16 21v-3a2 2 0 012-2h3"/>'};
 function toggleFS(){const r=document.documentElement;if(document.fullscreenElement)document.exitFullscreen();else if(r.requestFullscreen)r.requestFullscreen().catch(()=>toast('المتصفح منع ملء الشاشة هنا — افتح الصفحة في تبويب مستقل'));else toast('ملء الشاشة غير مدعوم في هذا المتصفح')}
