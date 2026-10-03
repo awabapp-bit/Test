@@ -221,7 +221,9 @@ const tp=new Map(),dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);let pz=null,hp=nu
 let mraf=0;
 function fling(vx,vy){cancelAnimationFrame(mraf);if(Math.hypot(vx,vy)<.08)return;let t0=performance.now();const step=t=>{const dt=Math.min(34,t-t0);t0=t;stage.scrollLeft+=vx*dt;stage.scrollTop+=vy*dt;const f=Math.pow(.945,dt/16);vx*=f;vy*=f;if(Math.hypot(vx,vy)>.025)mraf=requestAnimationFrame(step)};mraf=requestAnimationFrame(step)}
 function checkSwipe(e){const c=cur,dx=e.clientX-c.cx,dy=e.clientY-c.cy,D=Math.hypot(dx,dy),t=Math.max(1,performance.now()-c.t0);c.path+=Math.hypot(e.clientX-c.px,e.clientY-c.py);c.px=e.clientX;c.py=e.clientY;
- if(c.path<D*1.15+4&&Math.abs(dy)>=2.5*Math.abs(dx)&&((t<420&&D>=40&&D/t>=.7)||D>=240))return autoPan(e,dx,dy);return false}
+ const ax=Math.abs(dx),ay=Math.abs(dy);if(c.path>=D*1.15+4)return false;
+ const vert=ay>=2.5*ax,hor=ax>=2.5*ay&&stage.scrollWidth>stage.clientWidth+4;
+ if(vert&&((t<420&&D>=40&&D/t>=.7)||D>=240)||hor&&((t<420&&D>=60&&D/t>=.9)||D>=300))return autoPan(e,dx,dy);return false}
 function autoPan(e,dx,dy){const sl=stage.scrollLeft,st=stage.scrollTop,c=cur;cancelCur();setTool('hand',1);showPop('hand');toast('تحويل تلقائي لوضع التحريك — اختر القلم للرجوع');hp={x:c.cx,y:c.cy,sl,st,id:e.pointerId,vx:0,vy:0,lx:e.clientX,ly:e.clientY,lt:performance.now()};stage.scrollLeft=sl-dx;stage.scrollTop=st-dy;return true}
 function cancelCur(){if(!cur)return;const d=D[mode];if(cur.s){rm(cur.i,cur.s);draw(cur.i)}else{cur.del.slice().reverse().forEach(x=>{d.strokes[x.i].splice(x.idx,0,x.s);draw(x.i)})}cur=null}
 function commit(){const z=pz;pz=null;pagesEl.style.transform=pagesEl.style.transformOrigin='';const ns=Math.max(.4,Math.min(4,z.s0*z.r));if(Math.abs(ns-scale)>.001)setScale(ns);fix(z.an,z.mx,z.my)}
